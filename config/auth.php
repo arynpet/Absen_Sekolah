@@ -13,9 +13,9 @@ return [
             'provider' => 'users',
         ],
 
-        'admin' => [
+        'admin' => [ // Pastikan blok ini ada
             'driver' => 'session',
-            'provider' => 'admin',
+            'provider' => 'admins', // Mengarah ke provider di bawah
         ],
 
         'guru' => [
@@ -30,9 +30,9 @@ return [
             'model' => App\Models\User::class,
         ],
 
-        'admin' => [
+        'admins' => [ // Pastikan blok ini ada
             'driver' => 'eloquent',
-            'model' => App\Models\Admin::class,
+            'model' => App\Models\Admin::class, // Harus mengarah ke model yang baru kita fix
         ],
 
         'guru' => [
