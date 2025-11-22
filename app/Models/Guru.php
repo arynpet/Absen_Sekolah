@@ -4,13 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Support\Facades\Hash; // <<< WAJIB DITAMBAHKAN!
+use Illuminate\Support\Facades\Hash;
 
 class Guru extends Authenticatable
 {
-    use HasFactory;
-    public $timestamps = false; // <<< TAMBAHKAN INI
-
+    use HasFactory;   
     protected $table = 'guru';
 
     protected $fillable = [
@@ -18,27 +16,24 @@ class Guru extends Authenticatable
         'email',
         'password',
         'foto_profil',
-        'mata_pelajaran_id'
+        'mata_pelajaran_id',
+        'face_descriptor' 
     ];
 
     protected $hidden = ['password'];
 
-    // Relasi ke tabel mata pelajaran
     public function mataPelajaran()
     {
         return $this->belongsTo(MataPelajaran::class, 'mata_pelajaran_id');
     }
 
-    // Mutator Sandi: Sandi akan di-hash otomatis saat disimpan
     public function setPasswordAttribute($value)
     {
-        // Peningkatan: Tambahkan pengecekan apakah $value tidak kosong/null
         if ($value) {
-            $this->attributes['password'] = Hash::make($value); // Ini membutuhkan 'use Hash'
+            $this->attributes['password'] = Hash::make($value);
         }
     }
     
-    // Relasi ke tabel absensi guru
     public function absensi()
     {
         return $this->hasMany(AbsenGuru::class);

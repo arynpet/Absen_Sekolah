@@ -3,69 +3,79 @@
 namespace App\Http\Controllers;
 
 use App\Models\Guru;
+use App\Models\MataPelajaran;
 use Illuminate\Http\Request;
 
 class GuruController extends Controller
 {
-    // ✅ tampilkan semua guru
     public function index()
     {
-        $guru = Guru::all();
-        return view('admin.guru.index', compact('guru'));
+        $guru = Guru::with('mataPelajaran')->get();
+        
+        return view('admin.dataguru.index', compact('guru'));
     }
 
-    // ✅ form tambah guru
     public function create()
     {
-        return view('admin.guru.create');
+        $mataPelajaran = MataPelajaran::all();
+        return view('admin.dataguru.create', compact('mataPelajaran'));
     }
 
-    // ✅ simpan guru baru
     public function store(Request $request)
     {
         $request->validate([
-            'nama_guru' => 'required|string|max:255',
-            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'nama_guru' => 'required|string|max:100',
+            'email' => 'required|email|unique:guru,email',
+            'password' => 'required|string|min:6',
+            'mata_pelajaran_id' => 'nullable|exists:mata_pelajaran,id',
+            'face_descriptor' => 'required', // Wajib ada dari Face API
         ]);
 
         Guru::create($request->all());
-        return redirect()->route('guru.index')->with('success', 'Guru berhasil ditambahkan');
+
+        return redirect()->route('admin.dataguru.index')
+            ->with('success', 'Guru dan data wajah berhasil ditambahkan');
     }
 
-    // ✅ detail guru
-    public function show($id)
-    {
-        $guru = Guru::findOrFail($id);
-        return view('admin.guru.show', compact('guru'));
-    }
-
-    // ✅ form edit guru
     public function edit($id)
     {
         $guru = Guru::findOrFail($id);
-        return view('admin.guru.edit', compact('guru'));
+        $mataPelajaran = MataPelajaran::all();
+        return view('admin.dataguru.edit', compact('guru', 'mataPelajaran'));
     }
 
-    // ✅ update guru
     public function update(Request $request, $id)
     {
+        $guru = Guru::findOrFail($id);
+
         $request->validate([
-            'nama' => 'required|string|max:255',
-            'mapel' => 'required|string|max:100',
+            'nama_guru' => 'required|string|max:100',
+            'email' => 'required|email|unique:guru,email,'.$id,
+            'mata_pelajaran_id' => 'nullable|exists:mata_pelajaran,id',
         ]);
 
-        $guru = Guru::findOrFail($id);
-        $guru->update($request->all());
+        $data = $request->except(['password', 'face_descriptor']);
+        
+        if ($request->filled('password')) {
+            $data['password'] = $request->password; 
+        }
 
-        return redirect()->route('guru.index')->with('success', 'Guru berhasil diperbarui');
+        if ($request->filled('face_descriptor')) {
+            $data['face_descriptor'] = $request->face_descriptor;
+        }
+
+        $guru->update($data);
+
+        return redirect()->route('admin.dataguru.index')
+            ->with('success', 'Data guru berhasil diperbarui');
     }
 
-    // ✅ hapus guru
     public function destroy($id)
     {
         $guru = Guru::findOrFail($id);
         $guru->delete();
 
-        return redirect()->route('guru.index')->with('success', 'Guru berhasil dihapus');
+        return redirect()->route('admin.dataguru.index')
+            ->with('success', 'Guru berhasil dihapus');
     }
 }
