@@ -13,7 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-
-        // Catatan: Anda bisa menambahkan admin lain sesuai kebutuhan di sini.
+        $this->call([
+            AdminSeeder::class,
+        ]);
     }
 }
