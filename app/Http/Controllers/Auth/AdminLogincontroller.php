@@ -9,11 +9,13 @@ use App\Models\Admin;
 
 class AdminLoginController extends Controller
 {
+    // 1. Tampilkan Halaman Login
     public function showLoginForm()
     {
         return view('admin.login_admin');
     }
 
+    // 2. Proses Login
     public function login(Request $request)
     {
         $request->validate([
@@ -21,26 +23,33 @@ class AdminLoginController extends Controller
             'kode_admin' => 'required|string',
         ]);
 
-        // Ambil admin berdasarkan username
+        // Cek user di database
         $admin = Admin::where('username', $request->username)->first();
 
-        // Cek jika ada admin dan kode_admin cocok
-        if ($admin && $request->kode_admin === $admin->kode_admin) {
-
-            // Simpan admin ke session MANUAL
-            session(['admin_id' => $admin->id]);
+        // Validasi manual (karena password tidak di-hash)
+        if ($admin && $admin->kode_admin === $request->kode_admin) {
+            
+            // Login resmi menggunakan Guard 'admin'
+            Auth::guard('admin')->login($admin);
+            
+            $request->session()->regenerate();
 
             return redirect()->route('admin.dashboard');
         }
 
         return back()->withErrors([
-            'username' => 'Nama admin atau kode admin salah.',
-        ]);
+            'username' => 'Username atau Kode Admin salah.',
+        ])->withInput($request->only('username'));
     }
 
+    // 3. Proses Logout
     public function logout(Request $request)
     {
-        session()->forget('admin_id');
+        Auth::guard('admin')->logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
         return redirect()->route('admin.login');
     }
 }

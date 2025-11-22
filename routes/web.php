@@ -1,159 +1,141 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Auth\AdminLoginController;
+use App\Http\Controllers\Auth\GuruLoginController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AbsenGuruController;
 use App\Http\Controllers\GuruController;
 use App\Http\Controllers\InfoSekolahController;
-use App\Http\Controllers\Auth\AdminLoginController;
-use App\Http\Controllers\Auth\GuruLoginController;
-
-// Tambahan untuk Jadwal Mapel
+use App\Http\Controllers\MataPelajaranController;
 use App\Http\Controllers\JadwalMapelController;
 
 /*
 |--------------------------------------------------------------------------
-| ROUTE UMUM
+| Public Routes
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
-
 /*
 |--------------------------------------------------------------------------
-| LOGIN & LOGOUT ADMIN
+| Admin Authentication Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/admin/login', [AdminLoginController::class, 'showLoginForm'])->name('admin.login');
-Route::post('/admin/login', [AdminLoginController::class, 'login'])->name('admin.login.post');
-Route::post('/admin/logout', [AdminLoginController::class, 'logout'])->name('admin.logout');
+Route::prefix('admin')->name('admin.')->group(function () {
+    // Login routes (untuk yang belum login)
+    Route::middleware('guest:admin')->group(function () {
+        Route::get('login', [AdminLoginController::class, 'showLoginForm'])->name('login');
+        Route::post('login', [AdminLoginController::class, 'login'])->name('login.post');
+    });
 
-
-/*
-|--------------------------------------------------------------------------
-| ROUTE KHUSUS ADMIN (LOGIN DIBUTUHKAN)
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['auth:admin'])->group(function () {
-
-    // Dashboard Utama
-    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
-
-    /*
-    |--------------------------------------------------------------------------
-    | 1. ABSENSI GURU
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/admin/absenguru', [AbsenGuruController::class, 'index'])->name('admin.absenguru.index');
-    Route::get('/admin/absenguru/create', [AbsenGuruController::class, 'create'])->name('admin.absenguru.create');
-    Route::post('/admin/absenguru/store', [AbsenGuruController::class, 'store'])->name('admin.absenguru.store');
-    Route::get('/admin/absenguru/edit/{id}', [AbsenGuruController::class, 'edit'])->name('admin.absenguru.edit');
-    Route::put('/admin/absenguru/update/{id}', [AbsenGuruController::class, 'update'])->name('admin.absenguru.update');
-    Route::delete('/admin/absenguru/delete/{id}', [AbsenGuruController::class, 'destroy'])->name('admin.absenguru.destroy');
-
-    // Ajax data guru
-    Route::get('/admin/absenguru/get-guru/{id}', [AbsenGuruController::class, 'getGuruByMapel'])->name('admin.absenguru.getGuru');
-
-    // Export
-    Route::get('/admin/absenguru/export-excel', [AbsenGuruController::class, 'exportExcel'])->name('admin.absenguru.exportExcel');
-    Route::get('/admin/absenguru/export-pdf', [AbsenGuruController::class, 'exportPDF'])->name('admin.absenguru.exportPDF');
-
-    // Alias untuk sidebar
-    Route::get('/admin/absensi', [AbsenGuruController::class, 'index'])->name('admin.absensi.index');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 2. INFO SEKOLAH (CRUD)
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/admin/infosekolah', [InfoSekolahController::class, 'index'])->name('admin.infosekolah.index');
-    Route::get('/admin/infosekolah/create', [InfoSekolahController::class, 'create'])->name('admin.infosekolah.create');
-    Route::post('/admin/infosekolah/store', [InfoSekolahController::class, 'store'])->name('admin.infosekolah.store');
-    Route::get('/admin/infosekolah/edit/{id}', [InfoSekolahController::class, 'edit'])->name('admin.infosekolah.edit');
-    Route::put('/admin/infosekolah/update/{id}', [InfoSekolahController::class, 'update'])->name('admin.infosekolah.update');
-    Route::delete('/admin/infosekolah/delete/{id}', [InfoSekolahController::class, 'destroy'])->name('admin.infosekolah.destroy');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 3. DATA GURU (CRUD menggunakan resource)
-    |--------------------------------------------------------------------------
-    */
-    Route::resource('admin/dataguru', GuruController::class)
-        ->names('admin.dataguru')
-        ->parameters(['dataguru' => 'guru']);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 4. USERS LIST
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/admin/users', [AdminController::class, 'userIndex'])->name('admin.users.index');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 5. MAPEL (Jika dibutuhkan)
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/admin/mapel', [AdminController::class, 'mapelIndex'])->name('admin.mapel.index');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 6. LAPORAN
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/admin/laporan', [AdminController::class, 'laporanIndex'])->name('admin.laporan.index');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 7. SETTINGS & PROFILE
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/admin/settings', [AdminController::class, 'settingsIndex'])->name('admin.settings.index');
-    Route::get('/admin/profile', [AdminController::class, 'profileIndex'])->name('admin.profile.index');
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🚀 8. JADWAL MATA PELAJARAN (CRUD LENGKAP)
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/admin/jadwal-mapel', [JadwalMapelController::class, 'index'])->name('jadwal-mapel.index');
-    Route::get('/admin/jadwal-mapel/create', [JadwalMapelController::class, 'create'])->name('jadwal-mapel.create');
-    Route::post('/admin/jadwal-mapel/store', [JadwalMapelController::class, 'store'])->name('jadwal-mapel.store');
-    Route::delete('/admin/jadwal-mapel/delete/{id}', [JadwalMapelController::class, 'destroy'])->name('jadwal-mapel.destroy');
-
+    // Logout (untuk yang sudah login)
+    Route::post('logout', [AdminLoginController::class, 'logout'])
+        ->middleware('auth:admin')
+        ->name('logout');
 });
 
-
 /*
 |--------------------------------------------------------------------------
-| LOGIN & LOGOUT GURU
+| Admin Protected Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/guru/login', [GuruLoginController::class, 'showLoginForm'])->name('guru.login');
-Route::post('/guru/login', [GuruLoginController::class, 'login'])->name('guru.login.post');
-Route::post('/guru/logout', [GuruLoginController::class, 'logout'])->name('guru.logout');
-
-Route::middleware(['auth:guru'])->group(function () {
-    Route::get('/guru/dashboard', [GuruController::class, 'dashboard'])->name('guru.dashboard');
+Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function () {
+    
+    // Dashboard
+    Route::get('dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    
+    // Absen Guru (konsisten dengan nama yang sudah ada)
+    Route::prefix('absenguru')->name('absenguru.')->group(function () {
+        Route::get('/', [AbsenGuruController::class, 'index'])->name('index');
+        Route::get('create', [AbsenGuruController::class, 'create'])->name('create');
+        Route::post('/', [AbsenGuruController::class, 'store'])->name('store');
+        Route::get('{id}/edit', [AbsenGuruController::class, 'edit'])->name('edit');
+        Route::put('{id}', [AbsenGuruController::class, 'update'])->name('update');
+        Route::delete('{id}', [AbsenGuruController::class, 'destroy'])->name('destroy');
+        
+        // AJAX get guru by mapel
+        Route::get('get-guru/{mataPelajaranId}', [AbsenGuruController::class, 'getGuruByMapel'])
+            ->name('getGuru');
+        
+        // Export
+        Route::get('export-excel', [AbsenGuruController::class, 'exportExcel'])->name('exportExcel');
+        Route::get('export-pdf', [AbsenGuruController::class, 'exportPDF'])->name('exportPDF');
+    });
+    
+    // Data Guru
+    Route::prefix('guru')->name('dataguru.')->group(function () {
+        Route::get('/', [GuruController::class, 'index'])->name('index');
+        Route::get('create', [GuruController::class, 'create'])->name('create');
+        Route::post('/', [GuruController::class, 'store'])->name('store');
+        Route::get('{id}/edit', [GuruController::class, 'edit'])->name('edit');
+        Route::put('{id}', [GuruController::class, 'update'])->name('update');
+        Route::delete('{id}', [GuruController::class, 'destroy'])->name('destroy');
+    });
+    
+    // Mata Pelajaran
+    Route::prefix('mata-pelajaran')->name('mata_pelajaran.')->group(function () {
+        Route::get('/', [MataPelajaranController::class, 'index'])->name('index');
+        Route::get('create', [MataPelajaranController::class, 'create'])->name('create');
+        Route::post('/', [MataPelajaranController::class, 'store'])->name('store');
+        Route::get('{id}/edit', [MataPelajaranController::class, 'edit'])->name('edit');
+        Route::put('{id}', [MataPelajaranController::class, 'update'])->name('update');
+        Route::delete('{id}', [MataPelajaranController::class, 'destroy'])->name('destroy');
+    });
+    
+    // Info Sekolah
+    Route::prefix('infosekolah')->name('infosekolah.')->group(function () {
+        Route::get('/', [InfoSekolahController::class, 'index'])->name('index');
+        Route::get('create', [InfoSekolahController::class, 'create'])->name('create');
+        Route::post('/', [InfoSekolahController::class, 'store'])->name('store');
+        Route::get('{id}/edit', [InfoSekolahController::class, 'edit'])->name('edit');
+        Route::put('{id}', [InfoSekolahController::class, 'update'])->name('update');
+        Route::delete('{id}', [InfoSekolahController::class, 'destroy'])->name('destroy');
+    });
+    
+    // Jadwal Mata Pelajaran
+    Route::prefix('jadwal-mapel')->name('jadwal-mapel.')->group(function () {
+        Route::get('/', [JadwalMapelController::class, 'index'])->name('index');
+        Route::get('create', [JadwalMapelController::class, 'create'])->name('create');
+        Route::post('/', [JadwalMapelController::class, 'store'])->name('store');
+        Route::delete('{id}', [JadwalMapelController::class, 'destroy'])->name('destroy');
+    });
 });
 
+/*
+|--------------------------------------------------------------------------
+| Guru Authentication Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('guru')->name('guru.')->group(function () {
+    // Login routes
+    Route::middleware('guest:guru')->group(function () {
+        Route::get('login', [GuruLoginController::class, 'showLoginForm'])->name('login');
+        Route::post('login', [GuruLoginController::class, 'login'])->name('login.post');
+    });
+
+    // Logout
+    Route::post('logout', [GuruLoginController::class, 'logout'])
+        ->middleware('auth:guru')
+        ->name('logout');
+});
 
 /*
 |--------------------------------------------------------------------------
-| DEFAULT LOGIN REDIRECT
+| Guru Protected Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/login', function () {
-    return redirect()->route('admin.login');
-})->name('login');
+Route::prefix('guru')->name('guru.')->middleware('auth:guru')->group(function () {
+    Route::get('dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Fallback untuk route yang tidak ditemukan
+|--------------------------------------------------------------------------
+*/
+Route::fallback(function () {
+    return redirect()->route('home');
+});

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Data Absensi Guru - SMPN 4 Padalarang</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
     body {
@@ -55,28 +56,56 @@
       transition: 0.3s;
     }
 
-    .btn-primary { background-color: #4a90e2 !important; border-color: #4a90e2 !important; }
-    .btn-primary:hover { background-color: #357abd !important; }
+    .btn-primary { 
+      background-color: #4a90e2 !important; 
+      border-color: #4a90e2 !important; 
+    }
+    .btn-primary:hover { 
+      background-color: #357abd !important; 
+    }
 
-    .btn-danger { background-color: #e74c3c !important; border-color: #e74c3c !important; }
-    .btn-danger:hover { background-color: #c0392b !important; }
+    .btn-danger { 
+      background-color: #e74c3c !important; 
+      border-color: #e74c3c !important; 
+    }
+    .btn-danger:hover { 
+      background-color: #c0392b !important; 
+    }
 
-    .btn-warning { background-color: #f1c40f !important; border-color: #f1c40f !important; }
-    .btn-warning:hover { background-color: #d4ac0d !important; }
+    .btn-warning { 
+      background-color: #f1c40f !important; 
+      border-color: #f1c40f !important; 
+      color: #222;
+    }
+    .btn-warning:hover { 
+      background-color: #d4ac0d !important; 
+    }
     
-    /* 🆕 Menambahkan style untuk tombol kembali */
-    .btn-secondary-custom { 
-        background-color: #555 !important; 
-        border-color: #555 !important;
-        color: white;
+    .btn-secondary { 
+      background-color: #6c757d !important; 
+      border-color: #6c757d !important;
     }
-    .btn-secondary-custom:hover { 
-        background-color: #333 !important; 
-        border-color: #333 !important;
-        color: white;
+    .btn-secondary:hover { 
+      background-color: #545b62 !important; 
     }
 
-    tbody tr:hover { background-color: #fbe9d7; transition: 0.2s; }
+    .btn-success {
+      background-color: #28a745 !important;
+      border-color: #28a745 !important;
+    }
+    .btn-success:hover {
+      background-color: #218838 !important;
+    }
+
+    tbody tr:hover { 
+      background-color: #fbe9d7; 
+      transition: 0.2s; 
+    }
+
+    .badge {
+      padding: 0.5em 0.8em;
+      font-size: 0.85rem;
+    }
   </style>
 </head>
 
@@ -93,15 +122,24 @@
   @endif
 
   {{-- Tombol Aksi --}}
-  <div class="mb-4 d-flex justify-content-between">
-    {{-- 🆕 Tombol Kembali --}}
-    {{-- Asumsi rute dashboard admin adalah 'admin.dashboard' --}}
-    <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary-custom">
+  <div class="mb-4 d-flex flex-wrap justify-content-between gap-2">
+    <div class="d-flex gap-2">
+      <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Kembali
-    </a>
-
-    {{-- Tombol Tambah --}}
-    <a href="{{ route('admin.absenguru.create') }}" class="btn btn-primary">+ Tambah Absensi</a>
+      </a>
+      <a href="{{ route('admin.absenguru.create') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Tambah Absensi
+      </a>
+    </div>
+    
+    <div class="d-flex gap-2">
+      <a href="{{ route('admin.absenguru.exportExcel') }}" class="btn btn-success">
+        <i class="fas fa-file-excel"></i> Export Excel
+      </a>
+      <a href="{{ route('admin.absenguru.exportPDF') }}" class="btn btn-danger">
+        <i class="fas fa-file-pdf"></i> Export PDF
+      </a>
+    </div>
   </div>
 
   {{-- Tabel Data --}}
@@ -116,20 +154,21 @@
               <th>Nama Guru</th> 
               <th>Mata Pelajaran</th>
               <th>Tanggal</th>
+              <th>Jam Datang</th>
+              <th>Jam Pulang</th>
               <th>Status</th>
               <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {{-- 🔑 PERBAIKAN: Mengganti $info menjadi $kehadiran --}}
-            {{-- Asumsi bahwa controller mengirim data absensi sebagai $kehadiran --}}
             @forelse ($kehadiran as $index => $absen)
               <tr>
-                <td>{{ $index + 1 }}</td>
-                {{-- Mengakses relasi Guru dan Mata Pelajaran --}}
-                <td>{{ $absen->guru->nama_guru ?? 'N/A' }}</td>
-                <td>{{ $absen->mataPelajaran->nama_mapel ?? 'N/A' }}</td>
+                <td>{{ $kehadiran->firstItem() + $index }}</td>
+                <td>{{ $absen->guru->nama_guru ?? '-' }}</td>
+                <td>{{ $absen->mataPelajaran->nama_mata_pelajaran ?? '-' }}</td>
                 <td>{{ \Carbon\Carbon::parse($absen->tanggal)->format('d-m-Y') }}</td>
+                <td>{{ $absen->jam_datang ?? '-' }}</td>
+                <td>{{ $absen->jam_pulang ?? '-' }}</td>
                 <td>
                     <span class="badge 
                         @if($absen->status == 'Hadir') bg-success
@@ -141,29 +180,50 @@
                     </span>
                 </td>
                 <td class="d-flex flex-wrap justify-content-center gap-1">
-                  {{-- Mengubah rute edit dan destroy ke absenguru --}}
-                  <a href="{{ route('admin.absenguru.edit', $absen->id) }}" class="btn btn-warning btn-sm">Edit</a>
-                  <form action="{{ route('admin.absenguru.destroy', $absen->id) }}" method="POST" class="d-inline">
+                  <a href="{{ route('admin.absenguru.edit', $absen->id) }}" 
+                     class="btn btn-warning btn-sm">
+                    <i class="fas fa-edit"></i> Edit
+                  </a>
+                  <form action="{{ route('admin.absenguru.destroy', $absen->id) }}" 
+                        method="POST" 
+                        class="d-inline"
+                        onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                     @csrf
                     @method('DELETE')
-                    <button class="btn btn-danger btn-sm" onclick="return confirm('Yakin ingin menghapus data ini?')">Hapus</button>
+                    <button class="btn btn-danger btn-sm">
+                      <i class="fas fa-trash"></i> Hapus
+                    </button>
                   </form>
                 </td>
               </tr>
             @empty
               <tr>
-                <td colspan="6" class="text-center py-4">Belum ada data absensi guru.</td>
+                <td colspan="8" class="text-center py-4">
+                  <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                  <p class="mb-0">Belum ada data absensi guru.</p>
+                </td>
               </tr>
             @endforelse
           </tbody>
         </table>
       </div>
     </div>
+    
+    {{-- Pagination --}}
+    @if($kehadiran->hasPages())
+      <div class="card-footer">
+        <div class="d-flex justify-content-between align-items-center">
+          <small class="text-muted">
+            Menampilkan {{ $kehadiran->firstItem() }} - {{ $kehadiran->lastItem() }} 
+            dari {{ $kehadiran->total() }} data
+          </small>
+          {{ $kehadiran->links() }}
+        </div>
+      </div>
+    @endif
   </div>
 </div>
 
-{{-- 🆕 Tambahkan Font Awesome untuk ikon panah --}}
-<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
