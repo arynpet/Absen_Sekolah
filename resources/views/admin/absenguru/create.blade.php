@@ -324,6 +324,7 @@
     const matchResultDiv = document.getElementById('matchResultDiv');
     const matchResultContent = document.getElementById('matchResultContent');
     const guruIdSelect = document.getElementById('guru_id');
+    const mataPelajaranSelect = document.getElementById('mata_pelajaran_id');
 
     let modelsLoaded = false;
     let detectionInterval;
@@ -440,7 +441,7 @@
       try {
         updateStatus('⏳ Matching dengan database guru...', 'detecting');
 
-        const response = await fetch('{{ route("admin.guru.findByFace") }}', {
+        const response = await fetch('{{ route("admin.dataguru.findByFace") }}', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

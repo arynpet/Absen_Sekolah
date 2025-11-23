@@ -16,7 +16,7 @@
             <h2 class="text-xl font-bold mb-6">Laravel<br><span class="text-sm text-gray-400">Admin Panel</span></h2>
             <ul class="space-y-4">
                 <li><a href="/admin/dashboard" class="block p-2 rounded-lg bg-green-100 text-green-700 font-semibold">Dashboard</a></li>
-                <li><a href="{{ route('admin.guru.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Data Guru</a></li>
+                <li><a href="{{ route('admin.dataguru.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Data Guru</a></li>
                 <li><a href="{{ route('admin.absenguru.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Absensi Guru</a></li>
                 <li><a href="{{ route('admin.mata-pelajaran.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Jadwal Mata Pelajaran</a></li>
                 <li><a href="{{ route('admin.laporan') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Laporan</a></li>

@@ -31,30 +31,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     
     Route::get('dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     
-    // Absen Guru
-    Route::prefix('absenguru')->name('absenguru.')->group(function () {
-        Route::get('/', [AbsenGuruController::class, 'index'])->name('index');
-        Route::get('create', [AbsenGuruController::class, 'create'])->name('create');
-        Route::post('/', [AbsenGuruController::class, 'store'])->name('store');
-        Route::get('{id}/edit', [AbsenGuruController::class, 'edit'])->name('edit');
-        Route::put('{id}', [AbsenGuruController::class, 'update'])->name('update');
-        Route::delete('{id}', [AbsenGuruController::class, 'destroy'])->name('destroy');
-        
-        // AJAX Endpoints
-        Route::get('get-guru/{mataPelajaranId}', [AbsenGuruController::class, 'getGuruByMapel'])->name('getGuru');
-        
-        // 🆕 API untuk Face Recognition
-        Route::get('registered-faces', [AbsenGuruController::class, 'getRegisteredFaces'])->name('registeredFaces');
-        
-        // Export
-        Route::get('export-excel', [AbsenGuruController::class, 'exportExcel'])->name('exportExcel');
-        Route::get('export-pdf', [AbsenGuruController::class, 'exportPDF'])->name('exportPDF');
-
-        Route::post('match-face', [AbsenGuruController::class, 'matchFaceAndAbsen'])
-        ->name('matchFace');
-    });
-    
-    Route::prefix('guru')->name('guru.')->group(function () {
+    // ✅ PERBAIKAN: Data Guru Routes (Lengkap)
+    Route::prefix('dataguru')->name('dataguru.')->group(function () {
         Route::get('/', [GuruController::class, 'index'])->name('index');
         Route::get('create', [GuruController::class, 'create'])->name('create');
         Route::post('/', [GuruController::class, 'store'])->name('store');
@@ -71,6 +49,27 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         
         Route::post('/find-by-face', [GuruController::class, 'findByFaceDescriptor'])
             ->name('findByFace');
+    });
+    
+    // Absen Guru
+    Route::prefix('absenguru')->name('absenguru.')->group(function () {
+        Route::get('/', [AbsenGuruController::class, 'index'])->name('index');
+        Route::get('create', [AbsenGuruController::class, 'create'])->name('create');
+        Route::post('/', [AbsenGuruController::class, 'store'])->name('store');
+        Route::get('{id}/edit', [AbsenGuruController::class, 'edit'])->name('edit');
+        Route::put('{id}', [AbsenGuruController::class, 'update'])->name('update');
+        Route::delete('{id}', [AbsenGuruController::class, 'destroy'])->name('destroy');
+        
+        // AJAX Endpoints
+        Route::get('get-guru/{mataPelajaranId}', [AbsenGuruController::class, 'getGuruByMapel'])->name('getGuru');
+        
+        // 🆕 API untuk Face Recognition
+        Route::get('registered-faces', [AbsenGuruController::class, 'getRegisteredFaces'])->name('registeredFaces');
+        Route::post('match-face', [AbsenGuruController::class, 'matchFaceAndAbsen'])->name('matchFace');
+        
+        // Export
+        Route::get('export-excel', [AbsenGuruController::class, 'exportExcel'])->name('exportExcel');
+        Route::get('export-pdf', [AbsenGuruController::class, 'exportPDF'])->name('exportPDF');
     });
     
     // Mata Pelajaran

@@ -122,7 +122,7 @@
       <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">
         <i class="fas fa-arrow-left"></i> Kembali
       </a>
-      <a href="{{ route('admin.guru.create') }}" class="btn btn-primary">
+      <a href="{{ route('admin.dataguru.create') }}" class="btn btn-primary">
         <i class="fas fa-plus"></i> Tambah Guru
       </a>
     </div>
@@ -165,11 +165,11 @@
                 <td>{{ $g->mataPelajaran->nama_mata_pelajaran ?? '-' }}</td>
                 <td>{{ \Carbon\Carbon::parse($g->created_at)->format('d-m-Y') }}</td>
                 <td class="d-flex flex-wrap justify-content-center gap-1">
-                  <a href="{{ route('admin.guru.edit', $g->id) }}" 
+                  <a href="{{ route('admin.dataguru.edit', $g->id) }}" 
                      class="btn btn-warning btn-sm">
                     <i class="fas fa-edit"></i> Edit
                   </a>
-                  <form action="{{ route('admin.guru.destroy', $g->id) }}" 
+                  <form action="{{ route('admin.dataguru.destroy', $g->id) }}" 
                         method="POST" 
                         class="d-inline"
                         onsubmit="return confirm('Yakin ingin menghapus guru ini? Data absensi terkait juga akan terhapus.')">

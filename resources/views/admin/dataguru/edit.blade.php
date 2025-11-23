@@ -144,7 +144,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.guru.update', $guru->id) }}" method="POST" enctype="multipart/form-data" id="formEditGuru">
+            <form action="{{ route('admin.dataguru.update', $guru->id) }}" method="POST" enctype="multipart/form-data" id="formEditGuru">
                 @csrf
                 @method('PUT')
 
@@ -212,7 +212,7 @@
 
                 {{-- Tombol --}}
                 <div class="d-flex justify-content-between mt-4">
-                    <a href="{{ route('admin.guru.index') }}" class="btn btn-secondary">Kembali</a>
+                    <a href="{{ route('admin.dataguru.index') }}" class="btn btn-secondary">Kembali</a>
                     <button type="submit" class="btn btn-primary">💾 Simpan Perubahan</button>
                 </div>
             </form>

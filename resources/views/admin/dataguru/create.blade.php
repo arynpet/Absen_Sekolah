@@ -88,7 +88,7 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.guru.store') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('admin.dataguru.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             {{-- Nama Guru --}}
@@ -153,7 +153,7 @@
 
             {{-- Tombol --}}
             <div class="d-flex justify-content-between mt-4">
-                <a href="{{ route('admin.guru.index') }}" class="btn btn-secondary">Kembali</a>
+                <a href="{{ route('admin.dataguru.index') }}" class="btn btn-secondary">Kembali</a>
                 <button type="submit" class="btn btn-primary">Simpan Data</button>
             </div>
         </form>
