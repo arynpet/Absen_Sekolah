@@ -145,4 +145,122 @@ class AbsenGuruController extends Controller
         $pdf = PDF::loadView('admin.absenguru.pdf', compact('kehadiran'));
         return $pdf->download('absen_guru.pdf');
     }
+
+    public function matchFaceAndAbsen(Request $request)
+{
+    $request->validate([
+        'face_descriptor' => 'required|string',
+        'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+        'tanggal' => 'required|date',
+        'waktu' => 'required',
+        'status' => 'required|string|in:Hadir,Izin,Sakit,Alpa',
+        'image_data' => 'nullable|string',
+    ]);
+
+    try {
+        $inputDescriptor = json_decode($request->input('face_descriptor'), true);
+        
+        if (!is_array($inputDescriptor) || count($inputDescriptor) !== 128) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid face descriptor format'
+            ], 400);
+        }
+
+        // CARI GURU YANG MATCH
+        $guruList = Guru::whereNotNull('face_descriptor')->get();
+        
+        $bestMatch = null;
+        $bestDistance = 0.6;
+
+        foreach ($guruList as $guru) {
+            $storedDescriptor = json_decode($guru->face_descriptor, true);
+            
+            if (!is_array($storedDescriptor) || count($storedDescriptor) !== 128) {
+                continue;
+            }
+
+            $distance = $this->euclideanDistance($inputDescriptor, $storedDescriptor);
+            
+            if ($distance < $bestDistance) {
+                $bestDistance = $distance;
+                $bestMatch = $guru;
+            }
+        }
+
+        if (!$bestMatch) {
+            return response()->json([
+                'success' => false,
+                'matched' => false,
+                'message' => 'Wajah tidak dikenali'
+            ]);
+        }
+
+        // LANGSUNG SIMPAN ABSENSI
+        $imageData = $request->input('image_data');
+        $filename = null;
+
+        if ($imageData && !empty($imageData)) {
+            if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $type)) {
+                $imageData = substr($imageData, strpos($imageData, ',') + 1);
+                $imageData = base64_decode($imageData);
+
+                if ($imageData !== false) {
+                    $filename = 'absen_' . $bestMatch->id . '_' . time() . '.jpg';
+                    Storage::disk('public')->put('bukti_absen/' . $filename, $imageData);
+                }
+            }
+        }
+
+        $absen = AbsenGuru::create([
+            'guru_id' => $bestMatch->id,
+            'mata_pelajaran_id' => $request->mata_pelajaran_id,
+            'tanggal' => $request->tanggal,
+            'waktu' => $request->waktu,
+            'status' => $request->status,
+            'bukti_kehadiran' => $filename ? 'bukti_absen/' . $filename : null
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'matched' => true,
+            'guru' => [
+                'id' => $bestMatch->id,
+                'nama_guru' => $bestMatch->nama_guru,
+                'email' => $bestMatch->email,
+                'confidence' => round((1 - $bestDistance) * 100, 2)
+            ],
+            'absensi' => [
+                'id' => $absen->id,
+                'tanggal' => $absen->tanggal,
+                'status' => $absen->status
+            ],
+            'message' => '✅ Absensi berhasil dicatat untuk ' . $bestMatch->nama_guru
+        ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 🆕 HELPER: HITUNG EUCLIDEAN DISTANCE
+     */
+    private function euclideanDistance(array $desc1, array $desc2): float
+    {
+        if (count($desc1) !== count($desc2)) {
+            throw new \Exception('Descriptor dimensions tidak cocok');
+        }
+
+        $sum = 0;
+        for ($i = 0; $i < count($desc1); $i++) {
+            $diff = floatval($desc1[$i]) - floatval($desc2[$i]);
+            $sum += $diff * $diff;
+        }
+
+        return sqrt($sum);
+    }
 }

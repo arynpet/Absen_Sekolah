@@ -12,8 +12,9 @@ class GuruController extends Controller
 {
     public function index()
     {
-        $guru = Guru::with('mataPelajaran')->orderBy('created_at', 'desc')->get();
-        return view('admin.dataguru.index', compact('guru'));
+        $mataPelajaran = MataPelajaran::all(); 
+        $guru = Guru::with('mataPelajaran')->get();
+        return view('admin.dataguru.index', compact('guru', 'mataPelajaran'));
     }
 
     public function create()
@@ -25,30 +26,24 @@ class GuruController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama_guru' => 'required|string|max:100',
+            'nama_guru' => 'required',
             'email' => 'required|email|unique:guru,email',
             'password' => 'required|min:6',
             'mata_pelajaran_id' => 'nullable|exists:mata_pelajaran,id', 
             'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        $data = [
-            'nama_guru' => $request->nama_guru,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'mata_pelajaran_id' => $request->mata_pelajaran_id,
-        ];
+        $data = $request->all();
+        $data['password'] = Hash::make($request->password);
 
-        // Upload foto profil
         if ($request->hasFile('foto_profil')) {
-            $path = $request->file('foto_profil')->store('foto_profil', 'public');
-            $data['foto_profil'] = $path;
+            $path = $request->file('foto_profil')->store('public/foto_profil');
+            $data['foto_profil'] = str_replace('public/', '', $path);
         }
 
         Guru::create($data);
 
-        return redirect()->route('admin.guru.index')
-            ->with('success', '✅ Data guru berhasil ditambahkan!');
+        return redirect()->route('admin.dataguru.index')->with('success', 'Guru berhasil ditambahkan');
     }
 
     public function edit($id)
@@ -63,53 +58,202 @@ class GuruController extends Controller
         $guru = Guru::findOrFail($id);
 
         $request->validate([
-            'nama_guru' => 'required|string|max:100',
+            'nama_guru' => 'required',
             'email' => 'required|email|unique:guru,email,'.$id,
-            'password' => 'nullable|min:6',
             'mata_pelajaran_id' => 'nullable|exists:mata_pelajaran,id',
             'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
         ]);
 
-        $data = [
-            'nama_guru' => $request->nama_guru,
-            'email' => $request->email,
-            'mata_pelajaran_id' => $request->mata_pelajaran_id,
-        ];
+        $data = $request->except(['password', 'foto_profil']);
 
-        // Update password jika diisi
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
 
-        // Upload foto baru jika ada
         if ($request->hasFile('foto_profil')) {
-            // Hapus foto lama
-            if ($guru->foto_profil && Storage::disk('public')->exists($guru->foto_profil)) {
-                Storage::disk('public')->delete($guru->foto_profil);
+            if ($guru->foto_profil) {
+                Storage::delete('public/' . $guru->foto_profil);
             }
-            
-            $path = $request->file('foto_profil')->store('foto_profil', 'public');
-            $data['foto_profil'] = $path;
+            $path = $request->file('foto_profil')->store('public/foto_profil');
+            $data['foto_profil'] = str_replace('public/', '', $path);
         }
 
         $guru->update($data);
 
-        return redirect()->route('admin.guru.index')
-            ->with('success', '✅ Data guru berhasil diperbarui!');
+        return redirect()->route('admin.dataguru.index')->with('success', 'Data guru diperbarui');
     }
 
     public function destroy($id)
     {
         $guru = Guru::findOrFail($id);
-        
-        // Hapus foto profil jika ada
-        if ($guru->foto_profil && Storage::disk('public')->exists($guru->foto_profil)) {
-            Storage::disk('public')->delete($guru->foto_profil);
+        if ($guru->foto_profil) {
+            Storage::delete('public/' . $guru->foto_profil);
         }
-        
         $guru->delete();
+        return redirect()->route('admin.dataguru.index')->with('success', 'Guru dihapus');
+    }
+    
+    /**
+     * 🆕 EXTRACT FACE DESCRIPTOR DARI FOTO PROFIL
+     * Endpoint ini dipanggil saat upload foto profil guru
+     */
+    public function extractFaceDescriptor(Request $request, $id)
+    {
+        $guru = Guru::findOrFail($id);
         
-        return redirect()->route('admin.guru.index')
-            ->with('success', '🗑️ Data guru berhasil dihapus!');
+        $request->validate([
+            'face_data' => 'required|string' // Base64 dari canvas
+        ]);
+
+        try {
+            // Simpan face descriptor JSON dari frontend
+            $faceData = $request->input('face_data');
+            $guru->face_descriptor = $faceData;
+            $guru->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Face descriptor berhasil disimpan'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 🆕 API: GET GURU BERDASARKAN FACE SIMILARITY
+     * Admin absen tinggal scan wajah, sistem otomatis pilih nama guru
+     */
+    public function findByFaceDescriptor(Request $request)
+    {
+        $request->validate([
+            'face_descriptor' => 'required|string'
+        ]);
+
+        try {
+            $inputDescriptor = json_decode($request->input('face_descriptor'), true);
+            
+            if (!is_array($inputDescriptor) || count($inputDescriptor) !== 128) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid face descriptor format'
+                ], 400);
+            }
+
+            // Ambil semua guru dengan face descriptor
+            $guruList = Guru::whereNotNull('face_descriptor')->get();
+
+            if ($guruList->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada guru dengan face descriptor terdaftar'
+                ], 404);
+            }
+
+            $bestMatch = null;
+            $bestDistance = 0.6; // Threshold (semakin kecil = semakin strict)
+            $matchDetails = [];
+
+            foreach ($guruList as $guru) {
+                $storedDescriptor = json_decode($guru->face_descriptor, true);
+                
+                if (!is_array($storedDescriptor) || count($storedDescriptor) !== 128) {
+                    continue;
+                }
+
+                // Hitung Euclidean Distance
+                $distance = $this->euclideanDistance($inputDescriptor, $storedDescriptor);
+                
+                $matchDetails[] = [
+                    'guru_id' => $guru->id,
+                    'nama_guru' => $guru->nama_guru,
+                    'distance' => $distance,
+                    'match' => $distance < $bestDistance
+                ];
+
+                if ($distance < $bestDistance) {
+                    $bestDistance = $distance;
+                    $bestMatch = $guru;
+                }
+            }
+
+            if ($bestMatch) {
+                return response()->json([
+                    'success' => true,
+                    'matched' => true,
+                    'guru' => [
+                        'id' => $bestMatch->id,
+                        'nama_guru' => $bestMatch->nama_guru,
+                        'email' => $bestMatch->email,
+                        'mata_pelajaran_id' => $bestMatch->mata_pelajaran_id,
+                        'confidence' => round((1 - $bestDistance) * 100, 2)
+                    ],
+                    'distance' => $bestDistance,
+                    'debug' => $matchDetails // Untuk debugging
+                ]);
+            } else {
+                return response()->json([
+                    'success' => true,
+                    'matched' => false,
+                    'message' => 'Wajah tidak cocok dengan data guru terdaftar',
+                    'suggestion' => 'Silakan ambil foto ulang atau pilih guru secara manual',
+                    'closest_matches' => collect($matchDetails)
+                        ->sortBy('distance')
+                        ->take(3)
+                        ->values()
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * 🆕 HELPER: HITUNG EUCLIDEAN DISTANCE
+     * Mengukur similarity antara 2 face descriptor (0-1, semakin kecil = semakin mirip)
+     */
+    private function euclideanDistance(array $desc1, array $desc2): float
+    {
+        if (count($desc1) !== count($desc2)) {
+            throw new \Exception('Descriptor dimensions tidak cocok');
+        }
+
+        $sum = 0;
+        for ($i = 0; $i < count($desc1); $i++) {
+            $diff = floatval($desc1[$i]) - floatval($desc2[$i]);
+            $sum += $diff * $diff;
+        }
+
+        return sqrt($sum);
+    }
+
+    /**
+     * 🆕 API: BATCH GET ALL GURU DENGAN FACE DESCRIPTORS
+     * Untuk preload di cache frontend
+     */
+    public function getAllFaceDescriptors()
+    {
+        $guru = Guru::whereNotNull('face_descriptor')
+            ->select('id', 'nama_guru', 'face_descriptor')
+            ->get()
+            ->map(function ($g) {
+                return [
+                    'id' => $g->id,
+                    'nama_guru' => $g->nama_guru,
+                    'descriptor' => json_decode($g->face_descriptor, true)
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'count' => $guru->count(),
+            'data' => $guru
+        ]);
     }
 }

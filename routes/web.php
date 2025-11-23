@@ -49,9 +49,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         // Export
         Route::get('export-excel', [AbsenGuruController::class, 'exportExcel'])->name('exportExcel');
         Route::get('export-pdf', [AbsenGuruController::class, 'exportPDF'])->name('exportPDF');
+
+        Route::post('match-face', [AbsenGuruController::class, 'matchFaceAndAbsen'])
+        ->name('matchFace');
     });
     
-    // Data Guru
     Route::prefix('guru')->name('guru.')->group(function () {
         Route::get('/', [GuruController::class, 'index'])->name('index');
         Route::get('create', [GuruController::class, 'create'])->name('create');
@@ -59,6 +61,16 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::get('{id}/edit', [GuruController::class, 'edit'])->name('edit');
         Route::put('{id}', [GuruController::class, 'update'])->name('update');
         Route::delete('{id}', [GuruController::class, 'destroy'])->name('destroy');
+        
+        // 🆕 API ENDPOINTS UNTUK FACE RECOGNITION
+        Route::post('{id}/extract-face', [GuruController::class, 'extractFaceDescriptor'])
+            ->name('extractFace');
+        
+        Route::get('/all-face-descriptors', [GuruController::class, 'getAllFaceDescriptors'])
+            ->name('allDescriptors');
+        
+        Route::post('/find-by-face', [GuruController::class, 'findByFaceDescriptor'])
+            ->name('findByFace');
     });
     
     // Mata Pelajaran
