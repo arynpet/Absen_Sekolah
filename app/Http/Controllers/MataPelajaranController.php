@@ -11,19 +11,19 @@ class MataPelajaranController extends Controller
     {
         // Ambil semua mata pelajaran dengan guru yang mengajar
         $jadwal = MataPelajaran::with('guru')->get();
-        return view('admin.jadwal-mapel.index', compact('jadwal'));
+        return view('admin.matapelajaran.index', compact('jadwal'));
     }
 
     public function create()
     {
         // Untuk menambah mata pelajaran baru, redirect ke halaman mata pelajaran
-        return redirect()->route('admin.mata-pelajaran.create');
+        return redirect()->route('admin.matapelajaran.create');
     }
 
     public function store(Request $request)
     {
         // Store dilakukan di MataPelajaranController
-        return redirect()->route('admin.mata-pelajaran.store');
+        return redirect()->route('admin.matapelajaran.store');
     }
 
     public function destroy($id)
