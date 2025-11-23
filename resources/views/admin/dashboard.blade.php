@@ -16,13 +16,17 @@
             <h2 class="text-xl font-bold mb-6">Laravel<br><span class="text-sm text-gray-400">Admin Panel</span></h2>
             <ul class="space-y-4">
                 <li><a href="/admin/dashboard" class="block p-2 rounded-lg bg-green-100 text-green-700 font-semibold">Dashboard</a></li>
-                <li><a href="/admin/guru" class="block p-2 hover:bg-gray-200 rounded-lg">Data Guru</a></li>
-                <li><a href="/admin/infosekolah" class="block p-2 hover:bg-gray-200 rounded-lg">Info Sekolah</a></li>
-                <li><a href="/admin/absensi" class="block p-2 hover:bg-gray-200 rounded-lg">Absensi Guru</a></li>
-                <li><a href="/admin/jadwal-mapel" class="block p-2 hover:bg-gray-200 rounded-lg">Jadwal Mata Pelajaran</a></li>
-                <li><a href="/admin/laporan" class="block p-2 hover:bg-gray-200 rounded-lg">Laporan</a></li>
-                <li><a href="/admin/pengaturan" class="block p-2 hover:bg-gray-200 rounded-lg">Pengaturan</a></li>
-                <li><a href="/logout" class="block p-2 text-red-600">Logout</a></li>
+                <li><a href="{{ route('admin.guru.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Data Guru</a></li>
+                <li><a href="{{ route('admin.absenguru.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Absensi Guru</a></li>
+                <li><a href="{{ route('admin.mata-pelajaran.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Jadwal Mata Pelajaran</a></li>
+                <li><a href="{{ route('admin.laporan') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Laporan</a></li>
+                <li><a href="{{ route('admin.pengaturan') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Pengaturan</a></li>
+                <li>
+                    <form action="{{ route('admin.logout') }}" method="POST" class="inline">
+                        @csrf
+                        <button type="submit" class="block w-full text-left p-2 text-red-600 hover:bg-red-50 rounded-lg">Logout</button>
+                    </form>
+                </li>
             </ul>
         </div>
 

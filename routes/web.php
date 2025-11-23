@@ -8,7 +8,6 @@ use App\Http\Controllers\AbsenGuruController;
 use App\Http\Controllers\GuruController;
 use App\Http\Controllers\InfoSekolahController;
 use App\Http\Controllers\MataPelajaranController;
-use App\Http\Controllers\JadwalMapelController;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,7 +46,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Dashboard
     Route::get('dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     
-    // Absen Guru (konsisten dengan nama yang sudah ada)
+    // Absen Guru
     Route::prefix('absenguru')->name('absenguru.')->group(function () {
         Route::get('/', [AbsenGuruController::class, 'index'])->name('index');
         Route::get('create', [AbsenGuruController::class, 'create'])->name('create');
@@ -65,8 +64,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::get('export-pdf', [AbsenGuruController::class, 'exportPDF'])->name('exportPDF');
     });
     
+    // Alias untuk absensi -> absenguru (agar link di dashboard berfungsi)
+    Route::get('absensi', function() {
+        return redirect()->route('admin.absenguru.index');
+    });
+    
     // Data Guru
-    Route::prefix('guru')->name('dataguru.')->group(function () {
+    Route::prefix('guru')->name('guru.')->group(function () {
         Route::get('/', [GuruController::class, 'index'])->name('index');
         Route::get('create', [GuruController::class, 'create'])->name('create');
         Route::post('/', [GuruController::class, 'store'])->name('store');
@@ -76,12 +80,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     });
     
     // Mata Pelajaran
-    Route::prefix('mata-pelajaran')->name('mata_pelajaran.')->group(function () {
+    // Jadwal Mata Pelajaran
+    Route::prefix('mata-pelajaran')->name('mata-pelajaran.')->group(function () {
         Route::get('/', [MataPelajaranController::class, 'index'])->name('index');
         Route::get('create', [MataPelajaranController::class, 'create'])->name('create');
         Route::post('/', [MataPelajaranController::class, 'store'])->name('store');
-        Route::get('{id}/edit', [MataPelajaranController::class, 'edit'])->name('edit');
-        Route::put('{id}', [MataPelajaranController::class, 'update'])->name('update');
         Route::delete('{id}', [MataPelajaranController::class, 'destroy'])->name('destroy');
     });
     
@@ -95,13 +98,22 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::delete('{id}', [InfoSekolahController::class, 'destroy'])->name('destroy');
     });
     
-    // Jadwal Mata Pelajaran
-    Route::prefix('jadwal-mapel')->name('jadwal-mapel.')->group(function () {
-        Route::get('/', [JadwalMapelController::class, 'index'])->name('index');
-        Route::get('create', [JadwalMapelController::class, 'create'])->name('create');
-        Route::post('/', [JadwalMapelController::class, 'store'])->name('store');
-        Route::delete('{id}', [JadwalMapelController::class, 'destroy'])->name('destroy');
-    });
+    // Jadwal Mata Pelajaran (sementara disabled karena tabel tidak ada)
+    // Route::prefix('jadwal-mapel')->name('jadwal-mapel.')->group(function () {
+    //     Route::get('/', [MataPelajaranController::class, 'index'])->name('index');
+    //     Route::get('create', [MataPelajaranController::class, 'create'])->name('create');
+    //     Route::post('/', [MataPelajaranController::class, 'store'])->name('store');
+    //     Route::delete('{id}', [MataPelajaranController::class, 'destroy'])->name('destroy');
+    // });
+    
+    // Placeholder routes untuk menu yang belum ada controller
+    Route::get('laporan', function() {
+        return view('admin.coming-soon', ['menu' => 'Laporan']);
+    })->name('laporan');
+    
+    Route::get('pengaturan', function() {
+        return view('admin.coming-soon', ['menu' => 'Pengaturan']);
+    })->name('pengaturan');
 });
 
 /*
@@ -128,7 +140,9 @@ Route::prefix('guru')->name('guru.')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('guru')->name('guru.')->middleware('auth:guru')->group(function () {
-    Route::get('dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+    Route::get('dashboard', function() {
+        return view('guru.dashboard_guru');
+    })->name('dashboard');
 });
 
 /*
