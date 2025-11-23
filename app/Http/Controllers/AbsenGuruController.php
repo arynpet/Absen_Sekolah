@@ -17,7 +17,7 @@ class AbsenGuruController extends Controller
     {
         $kehadiran = AbsenGuru::with(['guru', 'mataPelajaran'])
             ->orderBy('tanggal', 'desc')
-            ->paginate(10); // Ubah ke paginate untuk mendukung pagination
+            ->paginate(10);
 
         return view('admin.absenguru.index', compact('kehadiran'));
     }
@@ -31,57 +31,51 @@ class AbsenGuruController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi
         $request->validate([
             'guru_id' => 'required|exists:guru,id',
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
             'tanggal' => 'required|date',
-            'waktu'   => 'required',
-            'status'  => 'required|string|in:Hadir,Izin,Sakit,Alpa',
-            'image_data' => 'nullable|string', // Validasi data gambar
+            'waktu' => 'required',
+            'status' => 'required|string|in:Hadir,Izin,Sakit,Alpa',
+            'image_data' => 'nullable|string',
+            'face_descriptor' => 'nullable|string', // Data wajah dari face-api.js
         ]);
 
-        // Ambil data dasar
         $data = $request->only('guru_id', 'mata_pelajaran_id', 'tanggal', 'waktu', 'status');
 
-        // --- PROSES SIMPAN FOTO BASE64 ---
+        // Simpan foto bukti
         if ($request->has('image_data') && !empty($request->input('image_data'))) {
-            
-            // 1. Ambil string base64 dari input hidden
             $base64_image = $request->input('image_data');
             
-            // 2. Cek apakah formatnya valid (ada header data:image/...)
             if (preg_match('/^data:image\/(\w+);base64,/', $base64_image, $type)) {
-                
-                // 3. Buang header, ambil isinya saja
                 $base64_image = substr($base64_image, strpos($base64_image, ',') + 1);
-                
-                // 4. Decode dari base64 ke binary gambar
                 $base64_image = base64_decode($base64_image);
 
                 if ($base64_image === false) {
-                    // Jika gagal decode
                     return back()->with('error', 'Gagal memproses gambar.');
                 }
 
-                // 5. Buat nama file unik
-                // Format: absen_GURU-ID_TIMESTAMP.jpg
                 $filename = 'absen_' . $request->guru_id . '_' . time() . '.jpg';
-                
-                // 6. Simpan ke folder 'public/bukti_absen'
-                // Pastikan sudah menjalankan: php artisan storage:link
                 Storage::disk('public')->put('bukti_absen/' . $filename, $base64_image);
-
-                // 7. Masukkan path ke array data database
                 $data['bukti_kehadiran'] = 'bukti_absen/' . $filename;
             }
         }
-        // -----------------------------------
 
-        // Simpan ke Database
-        \App\Models\AbsenGuru::create($data);
+        // Simpan face descriptor ke database guru (opsional, untuk pembelajaran)
+        if ($request->has('face_descriptor') && !empty($request->input('face_descriptor'))) {
+            $guru = Guru::find($request->guru_id);
+            
+            // Jika guru belum punya face descriptor, simpan
+            if (empty($guru->face_descriptor)) {
+                $guru->face_descriptor = $request->input('face_descriptor');
+                $guru->save();
+            }
+        }
 
-        return redirect()->route('admin.absenguru.index')->with('success', '✅ Absen berhasil disimpan dengan Foto!');
+        AbsenGuru::create($data);
+
+        return redirect()->route('admin.absenguru.index')
+            ->with('success', '✅ Absen berhasil disimpan dengan verifikasi wajah!');
     }
 
     public function edit($id)
@@ -106,23 +100,40 @@ class AbsenGuruController extends Controller
         $absen = AbsenGuru::findOrFail($id);
         $absen->update($request->only('guru_id','mata_pelajaran_id','tanggal','jam_datang','jam_pulang','status'));
 
-        return redirect()->route('admin.absenguru.index')->with('success', '✅ Data absensi guru berhasil diperbarui!');
+        return redirect()->route('admin.absenguru.index')
+            ->with('success', '✅ Data absensi guru berhasil diperbarui!');
     }
 
     public function destroy($id)
     {
         $absen = AbsenGuru::findOrFail($id);
+        
+        // Hapus foto bukti jika ada
+        if ($absen->bukti_kehadiran) {
+            Storage::disk('public')->delete($absen->bukti_kehadiran);
+        }
+        
         $absen->delete();
-        return redirect()->route('admin.absenguru.index')->with('success', '🗑️ Data absensi guru berhasil dihapus!');
+        return redirect()->route('admin.absenguru.index')
+            ->with('success', '🗑️ Data absensi guru berhasil dihapus!');
     }
 
     public function getGuruByMapel($mataPelajaranId)
     {
-        $guru = Guru::where('mata_pelajaran_id', $mataPelajaranId)->get(['id', 'nama_guru']);
+        $guru = Guru::where('mata_pelajaran_id', $mataPelajaranId)
+            ->get(['id', 'nama_guru', 'face_descriptor']);
         return response()->json($guru);
     }
 
-    // ------------------- EXPORT -------------------
+    // API untuk mendapatkan semua face descriptors guru terdaftar
+    public function getRegisteredFaces()
+    {
+        $guru = Guru::whereNotNull('face_descriptor')
+            ->get(['id', 'nama_guru', 'face_descriptor']);
+        
+        return response()->json($guru);
+    }
+
     public function exportExcel()
     {
         return Excel::download(new AbsenGuruExport, 'absen_guru.xlsx');
