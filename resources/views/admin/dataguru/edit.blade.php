@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tambah Guru - SMPN 4 Padalarang</title>
+  <title>Edit Guru - SMPN 4 Padalarang</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <style>
@@ -73,7 +73,7 @@
   <div class="container">
     <div class="card">
       <div class="card-header text-center">
-        ➕ Tambah Data Guru Baru
+        ✏️ Edit Data Guru
       </div>
       <div class="card-body">
 
@@ -88,8 +88,9 @@
             </div>
         @endif
 
-        <form action="{{ route('admin.guru.store') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('admin.guru.update', $guru->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
+            @method('PUT')
 
             {{-- Nama Guru --}}
             <div class="mb-3">
@@ -97,7 +98,7 @@
                   Nama Guru <span class="text-danger">*</span>
                 </label>
                 <input type="text" class="form-control" name="nama_guru" id="nama_guru"
-                    value="{{ old('nama_guru') }}" required placeholder="Contoh: Budi Santoso, S.Pd">
+                    value="{{ old('nama_guru', $guru->nama_guru) }}" required>
             </div>
 
             {{-- Email --}}
@@ -106,17 +107,17 @@
                   Email <span class="text-danger">*</span>
                 </label>
                 <input type="email" class="form-control" name="email" id="email"
-                    value="{{ old('email') }}" required placeholder="Contoh: budi@gmail.com">
+                    value="{{ old('email', $guru->email) }}" required>
             </div>
 
             {{-- Password --}}
             <div class="mb-3">
                 <label for="password" class="form-label fw-semibold">
-                  Password <span class="text-danger">*</span>
+                  Password Baru
                 </label>
                 <input type="password" class="form-control" name="password" id="password"
-                    required placeholder="Minimal 6 karakter">
-                <small class="text-muted">Password untuk login guru</small>
+                    placeholder="Kosongkan jika tidak ingin mengubah password">
+                <small class="text-muted">Isi hanya jika ingin mengganti password</small>
             </div>
 
             {{-- Mata Pelajaran --}}
@@ -128,12 +129,11 @@
                     <option value="">-- Pilih Mata Pelajaran (Opsional) --</option>
                     @foreach ($mataPelajaran as $mapel)
                         <option value="{{ $mapel->id }}" 
-                            {{ old('mata_pelajaran_id') == $mapel->id ? 'selected' : '' }}>
+                            {{ old('mata_pelajaran_id', $guru->mata_pelajaran_id) == $mapel->id ? 'selected' : '' }}>
                             {{ $mapel->nama_mata_pelajaran }}
                         </option>
                     @endforeach
                 </select>
-                <small class="text-muted">Kosongkan jika guru mengajar banyak mata pelajaran</small>
             </div>
 
             {{-- Foto Profil --}}
@@ -141,12 +141,23 @@
                 <label for="foto_profil" class="form-label fw-semibold">
                   Foto Profil
                 </label>
+                
+                {{-- Foto Lama --}}
+                @if($guru->foto_profil)
+                    <div class="mb-2">
+                        <p class="text-muted mb-1">Foto saat ini:</p>
+                        <img src="{{ asset('storage/' . $guru->foto_profil) }}" 
+                             class="preview-img" id="current_foto">
+                    </div>
+                @endif
+                
                 <input type="file" class="form-control" name="foto_profil" id="foto_profil"
                     accept="image/jpeg,image/png,image/jpg" onchange="previewImage(event)">
-                <small class="text-muted">Format: JPG, PNG. Maksimal 2MB</small>
+                <small class="text-muted">Kosongkan jika tidak ingin mengubah foto. Format: JPG, PNG. Maksimal 2MB</small>
                 
-                {{-- Preview --}}
+                {{-- Preview Foto Baru --}}
                 <div id="preview" style="display:none;">
+                    <p class="text-muted mb-1 mt-2">Preview foto baru:</p>
                     <img id="preview_img" class="preview-img">
                 </div>
             </div>
@@ -154,7 +165,7 @@
             {{-- Tombol --}}
             <div class="d-flex justify-content-between mt-4">
                 <a href="{{ route('admin.guru.index') }}" class="btn btn-secondary">Kembali</a>
-                <button type="submit" class="btn btn-primary">Simpan Data</button>
+                <button type="submit" class="btn btn-primary">Update Data</button>
             </div>
         </form>
 
