@@ -11,6 +11,8 @@ class Guru extends Authenticatable
     use HasFactory;   
     protected $table = 'guru';
 
+    public $timestamps = false;
+    
     protected $fillable = [
         'nama_guru',
         'email',
