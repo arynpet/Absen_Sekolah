@@ -9,15 +9,23 @@ class Info extends Model
 {
     use HasFactory;
 
-    // Menonaktifkan timestamps agar Laravel tidak mencari kolom 'created_at' dan 'updated_at'
-    public $timestamps = false; // 👈 PERBAIKAN UTAMA
+    // Menggunakan timestamps karena ada 'created_at' di migration
+    public $timestamps = true;
+    
+    // Hanya menggunakan created_at, tidak ada updated_at
+    const UPDATED_AT = null;
 
-    protected $table = 'info_sekolah'; // sesuai tabel MySQL
+    protected $table = 'info_sekolah';
 
     protected $fillable = [
         'judul_kegiatan',
         'waktu_kegiatan',
         'tanggal_kegiatan',
         'deskripsi'
+    ];
+
+    // Cast tanggal_kegiatan sebagai date
+    protected $casts = [
+        'tanggal_kegiatan' => 'date',
     ];
 }

@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('admin', function (Blueprint $table) {
             $table->id();
             $table->string('nama_admin', 100);
+            $table->string('username', 100)->unique();
             $table->string('kode_admin', 100);
-            $table->string('username', 100)->nullable();
             $table->timestamp('created_at')->useCurrent();
         });
     }

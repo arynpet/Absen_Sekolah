@@ -16,7 +16,7 @@ class AbsenGuruController extends Controller
     {
         $kehadiran = AbsenGuru::with(['guru', 'mataPelajaran'])
             ->orderBy('tanggal', 'desc')
-            ->get();
+            ->paginate(10); // Ubah ke paginate untuk mendukung pagination
 
         return view('admin.absenguru.index', compact('kehadiran'));
     }
@@ -34,10 +34,12 @@ class AbsenGuruController extends Controller
             'guru_id' => 'required|exists:guru,id',
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
             'tanggal' => 'required|date',
+            'jam_datang' => 'nullable|date_format:H:i',
+            'jam_pulang' => 'nullable|date_format:H:i',
             'status' => 'required|string|in:Hadir,Izin,Sakit,Alpa',
         ]);
 
-        AbsenGuru::create($request->only('guru_id','mata_pelajaran_id','tanggal','status'));
+        AbsenGuru::create($request->only('guru_id','mata_pelajaran_id','tanggal','jam_datang','jam_pulang','status'));
 
         return redirect()->route('admin.absenguru.index')->with('success', '✅ Data absensi guru berhasil ditambahkan!');
     }
@@ -56,11 +58,13 @@ class AbsenGuruController extends Controller
             'guru_id' => 'required|exists:guru,id',
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
             'tanggal' => 'required|date',
+            'jam_datang' => 'nullable|date_format:H:i',
+            'jam_pulang' => 'nullable|date_format:H:i',
             'status' => 'required|string|in:Hadir,Izin,Sakit,Alpa',
         ]);
 
         $absen = AbsenGuru::findOrFail($id);
-        $absen->update($request->only('guru_id','mata_pelajaran_id','tanggal','status'));
+        $absen->update($request->only('guru_id','mata_pelajaran_id','tanggal','jam_datang','jam_pulang','status'));
 
         return redirect()->route('admin.absenguru.index')->with('success', '✅ Data absensi guru berhasil diperbarui!');
     }
