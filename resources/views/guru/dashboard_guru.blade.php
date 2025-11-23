@@ -21,7 +21,6 @@
 </head>
 <body class="min-h-screen bg-gradient-to-br from-orange-200 via-blue-200 to-red-200">
 
-    <!-- Navbar -->
     <header class="bg-gradient-to-r from-orange-300 to-red-300 p-4 flex justify-between items-center shadow">
         <div class="flex items-center space-x-3">
             <h1 class="text-lg font-bold">
@@ -43,18 +42,15 @@
         </nav>
     </header>
 
-    <!-- Content -->
     <main class="p-8 text-center">
         <h2 class="text-2xl font-semibold mb-2">
             Selamat Datang, <span class="text-orange-700">{{ Auth::guard('guru')->user()->nama_guru }}</span>
         </h2>
         <p class="mb-6">Email: {{ Auth::guard('guru')->user()->email }}</p>
 
-        <!-- Jam Digital -->
         <div class="text-4xl font-bold mb-2" id="clock"></div>
         <div class="text-lg mb-8" id="date"></div>
 
-        <!-- Informasi Guru -->
         <div class="max-w-2xl mx-auto bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg mb-6">
             <h3 class="text-xl font-bold mb-4">Informasi Guru</h3>
             <div class="grid grid-cols-2 gap-4 text-left">
@@ -75,8 +71,7 @@
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="max-w-2xl mx-auto grid grid-cols-2 gap-4">
+        <div class="max-w-2xl mx-auto flex justify-center gap-4">
             <a href="{{ route('guru.absen') }}" 
                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:scale-105">
                 📸 Absen Sekarang

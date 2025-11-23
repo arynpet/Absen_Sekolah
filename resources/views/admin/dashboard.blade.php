@@ -1,4 +1,3 @@
-<!-- dashboard.blade.php dengan Jam, Kalender Dinamis, Chart, Animasi -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -7,169 +6,129 @@
     <title>Dashboard Admin</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      function updateClock() {
+        const now = new Date();
+        const waktu = now.toLocaleTimeString("id-ID", { hour12: false });
+        const tanggal = now.toLocaleDateString("id-ID", {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+        document.getElementById("clock").textContent = waktu;
+        document.getElementById("date").textContent = tanggal;
+      }
+      setInterval(updateClock, 1000);
+      window.onload = updateClock;
+    </script>
 </head>
-<body class="bg-gray-100">
-    <div class="flex min-h-screen">
+<body class="min-h-screen bg-gradient-to-br from-orange-200 via-blue-200 to-red-200">
 
-        <!-- Sidebar -->
-        <div id="sidebar" class="w-64 bg-white shadow-md px-6 py-6 fixed h-full transition-all duration-500">
-            <h2 class="text-xl font-bold mb-6">Laravel<br><span class="text-sm text-gray-400">Admin Panel</span></h2>
-            <ul class="space-y-4">
-                <li><a href="/admin/dashboard" class="block p-2 rounded-lg bg-green-100 text-green-700 font-semibold">Dashboard</a></li>
-                <li><a href="{{ route('admin.dataguru.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Data Guru</a></li>
-                <li><a href="{{ route('admin.absenguru.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Absensi Guru</a></li>
-                <li><a href="{{ route('admin.mata-pelajaran.index') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Jadwal Mata Pelajaran</a></li>
-                <li><a href="{{ route('admin.laporan') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Laporan</a></li>
-                <li><a href="{{ route('admin.pengaturan') }}" class="block p-2 hover:bg-gray-200 rounded-lg">Pengaturan</a></li>
-                <li>
-                    <form action="{{ route('admin.logout') }}" method="POST" class="inline">
-                        @csrf
-                        <button type="submit" class="block w-full text-left p-2 text-red-600 hover:bg-red-50 rounded-lg">Logout</button>
-                    </form>
-                </li>
-            </ul>
+    <!-- Navbar -->
+    <header class="bg-gradient-to-r from-orange-300 to-red-300 p-4 flex justify-between items-center shadow">
+        <div class="flex items-center space-x-3">
+            <h1 class="text-lg font-bold">
+                RAKSA ABSENT <br>
+                <span class="text-xl">SMPN 4 PADALARANG - ADMIN</span>
+            </h1>
         </div>
+        <nav class="space-x-6 font-semibold flex items-center">
+            <a href="{{ route('admin.dashboard') }}" class="hover:text-red-600">HOME</a>
+            <a href="{{ route('admin.dataguru.index') }}" class="hover:text-red-600">DATA GURU</a>
+            <a href="{{ route('admin.absenguru.index') }}" class="hover:text-red-600">ABSENSI</a>
+            <a href="{{ route('admin.mata-pelajaran.index') }}" class="hover:text-red-600">MATA PELAJARAN</a>
+            
+            <form action="{{ route('admin.logout') }}" method="POST" class="inline">
+                @csrf
+                <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">
+                    Logout
+                </button>
+            </form>
+        </nav>
+    </header>
 
-        <!-- Main Content -->
-        <div class="flex-1 ml-64 p-8 transition-all">
+    <!-- Content -->
+    <main class="p-8 text-center">
+        <h2 class="text-2xl font-semibold mb-2">
+            Selamat Datang, <span class="text-orange-700">Admin</span>
+        </h2>
+        <p class="mb-6">Panel Kontrol Administrasi SMPN 4 Padalarang</p>
 
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-6">
-                <button onclick="toggleSidebar()" class="p-2 bg-white shadow rounded-lg">☰</button>
-                <div class="flex items-center space-x-6">
-                    <div id="clock" class="text-lg font-semibold"></div>
-                    <div class="flex items-center space-x-3">
-                        <span>Hai, <strong>Admin</strong></span>
-                        <img src="https://ui-avatars.com/api/?name=Admin" class="w-10 h-10 rounded-full" />
-                    </div>
-                </div>
+        <!-- Jam Digital -->
+        <div class="text-4xl font-bold mb-2" id="clock"></div>
+        <div class="text-lg mb-8" id="date"></div>
+
+        <!-- Statistik Cards -->
+        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg transform hover:scale-105 transition">
+                <h3 class="text-gray-600 mb-2">Guru Hadir</h3>
+                <p class="text-4xl font-bold text-green-600">38</p>
             </div>
-
-            <!-- Welcome Card -->
-            <div class="bg-white p-6 rounded-xl shadow mb-6 flex justify-between items-center transform transition-all duration-700 hover:scale-[1.02]">
-                <div>
-                    <h2 class="text-2xl font-bold mb-2">Selamat Datang, Admin!</h2>
-                    <p class="text-gray-500">Semoga harimu menyenangkan.</p>
-                </div>
-                <img src="https://cdn-icons-png.flaticon.com/512/3209/3209265.png" class="w-40 opacity-80" />
+            <div class="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg transform hover:scale-105 transition">
+                <h3 class="text-gray-600 mb-2">Izin / Sakit</h3>
+                <p class="text-4xl font-bold text-yellow-500">4</p>
             </div>
-
-            <!-- Statistik Cards -->
-            <div class="grid grid-cols-3 gap-6 mb-6">
-                <div class="bg-white p-6 rounded-xl shadow transform transition duration-500 hover:-translate-y-2">
-                    <h3 class="text-gray-600">Guru Hadir</h3>
-                    <p class="text-3xl font-bold text-green-600">38</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow transform transition duration-500 hover:-translate-y-2">
-                    <h3 class="text-gray-600">Izin / Sakit</h3>
-                    <p class="text-3xl font-bold text-yellow-500">4</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl shadow transform transition duration-500 hover:-translate-y-2">
-                    <h3 class="text-gray-600">Alpa</h3>
-                    <p class="text-3xl font-bold text-red-500">3</p>
-                </div>
-            </div>
-
-            <!-- Chart Card -->
-            <div class="bg-white p-6 rounded-xl shadow mb-6">
-                <h3 class="font-bold mb-3">Grafik Kehadiran Guru</h3>
-                <canvas id="attendanceChart" height="100"></canvas>
-            </div>
-
-            <!-- Placeholder Content -->
-            <div class="bg-white p-6 rounded-xl shadow">
-                <h3 class="font-bold mb-2">Members</h3>
-                <p class="text-gray-500 text-sm">No lessons yet.</p>
+            <div class="bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg transform hover:scale-105 transition">
+                <h3 class="text-gray-600 mb-2">Alpa</h3>
+                <p class="text-4xl font-bold text-red-500">3</p>
             </div>
         </div>
 
-        <!-- Right Panel -->
-        <div class="w-80 bg-transparent p-6 space-y-6 hidden lg:block">
-
-            <!-- Profile Card -->
-            <div class="bg-white p-6 rounded-xl shadow text-center">
-                <img src="https://ui-avatars.com/api/?name=Admin" class="w-20 h-20 mx-auto rounded-full mb-3" />
-                <h4 class="font-bold text-lg">Admin</h4>
-                <p class="text-sm text-gray-500">Administrator</p>
-                <button class="mt-3 bg-green-500 text-white px-4 py-1 rounded-lg">Profile</button>
-            </div>
-
-            <!-- Dynamic Calendar -->
-            <div class="bg-white p-6 rounded-xl shadow">
-                <h4 class="font-bold mb-3">Calendar</h4>
-                <div id="calendar" class="grid grid-cols-7 gap-1 text-center text-sm"></div>
-            </div>
-
-            <!-- Reminders -->
-            <div class="bg-white p-6 rounded-xl shadow">
-                <h4 class="font-bold mb-3">Reminders</h4>
-                <p class="text-gray-500 text-sm">No reminders.</p>
-            </div>
-
+        <!-- Chart -->
+        <div class="max-w-4xl mx-auto bg-white/80 backdrop-blur-md p-6 rounded-xl shadow-lg mb-8">
+            <h3 class="text-xl font-bold mb-4">Grafik Kehadiran Guru Minggu Ini</h3>
+            <canvas id="attendanceChart" height="100"></canvas>
         </div>
-    </div>
+
+        <!-- Quick Actions -->
+        <div class="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
+            <a href="{{ route('admin.dataguru.index') }}" 
+               class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:scale-105">
+                👥 Data Guru
+            </a>
+            <a href="{{ route('admin.absenguru.index') }}" 
+               class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:scale-105">
+                📋 Absensi
+            </a>
+            <a href="{{ route('admin.mata-pelajaran.index') }}" 
+               class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:scale-105">
+                📚 Mata Pelajaran
+            </a>
+            <a href="{{ route('admin.infosekolah.index') }}" 
+               class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:scale-105">
+                📢 Info Sekolah
+            </a>
+        </div>
+    </main>
 
     <script>
-        /* Sidebar animation */
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('-ml-64');
-        }
-
-        /* Dynamic Clock */
-        function updateClock() {
-            const now = new Date();
-            const time = now.toLocaleTimeString('id-ID');
-            document.getElementById('clock').innerText = time;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        /* Dynamic Calendar */
-        function loadCalendar() {
-            const calendar = document.getElementById('calendar');
-            calendar.innerHTML = '';
-
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = today.getMonth();
-
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-            const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-            weekdays.forEach(d => {
-                calendar.innerHTML += `<div class='font-bold text-gray-600 mb-1'>${d}</div>`;
-            });
-
-            for (let i = 0; i < firstDay; i++) {
-                calendar.innerHTML += `<div></div>`;
-            }
-
-            for (let i = 1; i <= daysInMonth; i++) {
-                const isToday = i === today.getDate();
-                calendar.innerHTML += `<div class='p-2 rounded-lg ${isToday ? 'bg-green-500 text-white' : 'bg-gray-100'}'>${i}</div>`;
-            }
-        }
-        loadCalendar();
-
-        /* ChartJS */
         const ctx = document.getElementById('attendanceChart');
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum'],
+                labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
                 datasets: [{
                     label: 'Hadir',
                     data: [35, 38, 37, 40, 38],
-                    borderWidth: 2,
-                    tension: 0.4
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true
                 }]
             },
             options: {
                 responsive: true,
-                scales: { y: { beginAtZero: true } }
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: { 
+                    y: { 
+                        beginAtZero: true,
+                        max: 45
+                    } 
+                }
             }
         });
     </script>
