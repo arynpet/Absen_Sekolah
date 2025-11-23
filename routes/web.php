@@ -124,15 +124,6 @@ Route::prefix('guru')->name('guru.')->middleware('auth:guru')->group(function ()
     })->name('absen');
     
     Route::post('absen', [AbsenGuruController::class, 'store'])->name('absen.store');
-    
-    // Riwayat Absensi Guru
-    Route::get('riwayat', function() {
-        $riwayat = \App\Models\AbsenGuru::where('guru_id', auth('guru')->id())
-            ->with('mataPelajaran')
-            ->orderBy('tanggal', 'desc')
-            ->paginate(10);
-        return view('guru.riwayat', compact('riwayat'));
-    })->name('riwayat');
 });
 
 Route::fallback(function () {

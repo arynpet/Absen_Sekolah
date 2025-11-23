@@ -77,7 +77,7 @@
                                         </td>
                                         <td class="p-3">
                                             <div class="flex gap-2">
-                                                <a href="{{ route('admin.mata_pelajaran.edit', $mapel->id) }}" 
+                                                <a href="{{ route('admin.mata-pelajaran.edit', $mapel->id) }}" 
                                                    class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600 text-sm">
                                                     Edit
                                                 </a>

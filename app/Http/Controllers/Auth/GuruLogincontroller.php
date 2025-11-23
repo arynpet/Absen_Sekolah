@@ -41,6 +41,7 @@ class GuruLoginController extends Controller
         Auth::guard('guru')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect()->route('login');
+        
+        return redirect()->route('home');
     }
 }

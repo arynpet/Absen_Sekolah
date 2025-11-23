@@ -40,7 +40,6 @@ class AdminLoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        // ✅ PERBAIKAN: Redirect ke admin login
-        return redirect()->route('login');
+        return redirect()->route('home');
     }
 }

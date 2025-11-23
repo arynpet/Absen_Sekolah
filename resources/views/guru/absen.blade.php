@@ -127,12 +127,14 @@
                 </select>
               </div>
 
-              <div class="d-flex justify-content-between mt-4">
-                <a href="{{ route('guru.dashboard') }}" class="btn btn-secondary">Kembali</a>
-                <button type="submit" class="btn btn-success" id="btnSimpan" disabled>
-                  <i class="fas fa-save"></i> Simpan Absensi
-                </button>
-              </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ route('guru.dashboard') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Kembali
+                    </a>
+                    <button type="submit" class="btn btn-success" id="btnSimpan" disabled>
+                        <i class="fas fa-save"></i> Simpan Absensi
+                    </button>
+                </div>
             </form>
 
           </div>

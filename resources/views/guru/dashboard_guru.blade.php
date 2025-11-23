@@ -81,10 +81,6 @@
                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:scale-105">
                 📸 Absen Sekarang
             </a>
-            <a href="{{ route('guru.riwayat') }}" 
-               class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg transition transform hover:scale-105">
-                📋 Riwayat Absensi
-            </a>
         </div>
     </main>
 

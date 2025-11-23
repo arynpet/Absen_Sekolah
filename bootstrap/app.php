@@ -3,7 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request; // 1. Tambahkan ini
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -12,21 +12,26 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        
-        // 2. Hapus alias 'admin' jika tidak dipakai di route (opsional, biar rapi)
-        // $middleware->alias([...]); 
-
-        // 3. Konfigurasi Redirect Pintar
-        $middleware->redirectTo(
-            guests: '/admin/login', // Jika belum login, lempar ke sini
-            users: function (Request $request) {
-                // Jika SUDAH login & mencoba buka halaman login:
-                if ($request->is('admin*')) {
-                    return route('admin.dashboard'); // Admin ke Dashboard
-                }
-                return route('home'); // User biasa ke Home
+        $middleware->redirectGuestsTo(function (Request $request) {
+            // Deteksi apakah ini route admin atau guru
+            if ($request->is('admin*')) {
+                return route('admin.login');
             }
-        );
+            if ($request->is('guru*')) {
+                return route('guru.login');
+            }
+            return route('home');
+        });
+
+        $middleware->redirectUsersTo(function (Request $request) {
+            if ($request->user('admin')) {
+                return route('admin.dashboard');
+            }
+            if ($request->user('guru')) {
+                return route('guru.dashboard');
+            }
+            return route('home');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

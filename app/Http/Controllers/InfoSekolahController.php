@@ -91,4 +91,10 @@ class InfoSekolahController extends Controller
         return redirect()->route('admin.infosekolah.index')
                          ->with('success', '🗑️ Info sekolah berhasil dihapus!');
     }
+
+    public function publicIndex()
+    {
+        $info = Info::orderBy('tanggal_kegiatan', 'desc')->get();
+        return view('public.info_sekolah', compact('info'));
+    }
 }
