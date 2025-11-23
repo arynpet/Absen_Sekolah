@@ -31,18 +31,16 @@ class AbsenGuruController extends Controller
 
     public function store(Request $request)
     {
-        // ✅ PERBAIKAN: Lebih detail validation dengan custom messages
+        // ✅ PERBAIKAN: Validasi yang lebih fleksibel
         $validated = $request->validate([
-            'guru_id' => 'required|exists:guru,id',
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
             'tanggal' => 'required|date',
             'waktu' => 'required',
             'status' => 'required|string|in:Hadir,Izin,Sakit,Alpa',
+            'guru_id' => 'nullable|exists:guru,id', // Ubah jadi nullable
             'image_data' => 'nullable|string',
             'face_descriptor' => 'nullable|string',
         ], [
-            'guru_id.required' => 'Silakan pilih guru terlebih dahulu atau ambil foto wajah.',
-            'guru_id.exists' => 'Guru yang dipilih tidak valid.',
             'mata_pelajaran_id.required' => 'Silakan pilih mata pelajaran.',
             'mata_pelajaran_id.exists' => 'Mata pelajaran yang dipilih tidak valid.',
             'tanggal.required' => 'Tanggal harus diisi.',
@@ -53,7 +51,51 @@ class AbsenGuruController extends Controller
         ]);
 
         try {
-            $data = $request->only('guru_id', 'mata_pelajaran_id', 'tanggal', 'waktu', 'status');
+            // ✅ PERBAIKAN: Jika guru_id kosong tapi ada face_descriptor, coba match dulu
+            if (empty($request->guru_id) && !empty($request->face_descriptor)) {
+                $descriptor = json_decode($request->face_descriptor, true);
+                
+                if (is_array($descriptor) && count($descriptor) === 128) {
+                    $guruList = Guru::whereNotNull('face_descriptor')->get();
+                    
+                    $bestMatch = null;
+                    $bestDistance = 0.6;
+
+                    foreach ($guruList as $guru) {
+                        $storedDescriptor = json_decode($guru->face_descriptor, true);
+                        
+                        if (!is_array($storedDescriptor) || count($storedDescriptor) !== 128) {
+                            continue;
+                        }
+
+                        $distance = $this->euclideanDistance($descriptor, $storedDescriptor);
+                        
+                        if ($distance < $bestDistance) {
+                            $bestDistance = $distance;
+                            $bestMatch = $guru;
+                        }
+                    }
+
+                    if ($bestMatch) {
+                        $validated['guru_id'] = $bestMatch->id;
+                    }
+                }
+            }
+
+            // ✅ Validasi akhir: guru_id harus ada
+            if (empty($validated['guru_id'])) {
+                return back()
+                    ->with('error', '❌ Guru tidak teridentifikasi. Silakan ambil foto ulang atau pilih manual.')
+                    ->withInput();
+            }
+
+            $data = [
+                'guru_id' => $validated['guru_id'],
+                'mata_pelajaran_id' => $validated['mata_pelajaran_id'],
+                'tanggal' => $validated['tanggal'],
+                'waktu' => $validated['waktu'],
+                'status' => $validated['status']
+            ];
 
             // Simpan foto bukti
             if ($request->has('image_data') && !empty($request->input('image_data'))) {
@@ -64,7 +106,7 @@ class AbsenGuruController extends Controller
                     $base64_image = base64_decode($base64_image);
 
                     if ($base64_image !== false) {
-                        $filename = 'absen_' . $request->guru_id . '_' . time() . '.jpg';
+                        $filename = 'absen_' . $validated['guru_id'] . '_' . time() . '.jpg';
                         Storage::disk('public')->put('bukti_absen/' . $filename, $base64_image);
                         $data['bukti_kehadiran'] = 'bukti_absen/' . $filename;
                     }
@@ -73,7 +115,7 @@ class AbsenGuruController extends Controller
 
             // Simpan face descriptor ke database guru (opsional)
             if ($request->has('face_descriptor') && !empty($request->input('face_descriptor'))) {
-                $guru = Guru::find($request->guru_id);
+                $guru = Guru::find($validated['guru_id']);
                 
                 if ($guru && empty($guru->face_descriptor)) {
                     $guru->face_descriptor = $request->input('face_descriptor');
@@ -84,7 +126,7 @@ class AbsenGuruController extends Controller
             AbsenGuru::create($data);
 
             return redirect()->route('admin.absenguru.index')
-                ->with('success', '✅ Absen berhasil disimpan dengan verifikasi wajah!');
+                ->with('success', '✅ Absensi berhasil disimpan!');
 
         } catch (\Exception $e) {
             return back()
@@ -147,9 +189,6 @@ class AbsenGuruController extends Controller
         return response()->json($guru);
     }
 
-    /**
-     * 🆕 MATCH FACE DAN LANGSUNG ABSEN
-     */
     public function matchFaceAndAbsen(Request $request)
     {
         $request->validate([
@@ -199,7 +238,6 @@ class AbsenGuruController extends Controller
                 ]);
             }
 
-            // LANGSUNG SIMPAN ABSENSI
             $imageData = $request->input('image_data');
             $filename = null;
 
@@ -249,9 +287,6 @@ class AbsenGuruController extends Controller
         }
     }
 
-    /**
-     * 🆕 HELPER: HITUNG EUCLIDEAN DISTANCE
-     */
     private function euclideanDistance(array $desc1, array $desc2): float
     {
         if (count($desc1) !== count($desc2)) {

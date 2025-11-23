@@ -14,6 +14,9 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+// ✅ FIX 6: Public Info Sekolah
+Route::get('/infosekolah', [InfoSekolahController::class, 'publicIndex'])->name('infosekolah.public');
+
 // Admin Authentication Routes
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::middleware('guest:admin')->group(function () {
@@ -31,7 +34,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     
     Route::get('dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
     
-    // ✅ PERBAIKAN: Data Guru Routes (Lengkap)
+    // Data Guru Routes
     Route::prefix('dataguru')->name('dataguru.')->group(function () {
         Route::get('/', [GuruController::class, 'index'])->name('index');
         Route::get('create', [GuruController::class, 'create'])->name('create');
@@ -40,15 +43,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::put('{id}', [GuruController::class, 'update'])->name('update');
         Route::delete('{id}', [GuruController::class, 'destroy'])->name('destroy');
         
-        // 🆕 API ENDPOINTS UNTUK FACE RECOGNITION
-        Route::post('{id}/extract-face', [GuruController::class, 'extractFaceDescriptor'])
-            ->name('extractFace');
-        
-        Route::get('/all-face-descriptors', [GuruController::class, 'getAllFaceDescriptors'])
-            ->name('allDescriptors');
-        
-        Route::post('/find-by-face', [GuruController::class, 'findByFaceDescriptor'])
-            ->name('findByFace');
+        // API Face Recognition
+        Route::post('{id}/extract-face', [GuruController::class, 'extractFaceDescriptor'])->name('extractFace');
+        Route::get('/all-face-descriptors', [GuruController::class, 'getAllFaceDescriptors'])->name('allDescriptors');
+        Route::post('/find-by-face', [GuruController::class, 'findByFaceDescriptor'])->name('findByFace');
     });
     
     // Absen Guru
@@ -60,27 +58,28 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::put('{id}', [AbsenGuruController::class, 'update'])->name('update');
         Route::delete('{id}', [AbsenGuruController::class, 'destroy'])->name('destroy');
         
-        // AJAX Endpoints
         Route::get('get-guru/{mataPelajaranId}', [AbsenGuruController::class, 'getGuruByMapel'])->name('getGuru');
-        
-        // 🆕 API untuk Face Recognition
         Route::get('registered-faces', [AbsenGuruController::class, 'getRegisteredFaces'])->name('registeredFaces');
         Route::post('match-face', [AbsenGuruController::class, 'matchFaceAndAbsen'])->name('matchFace');
         
-        // Export
         Route::get('export-excel', [AbsenGuruController::class, 'exportExcel'])->name('exportExcel');
         Route::get('export-pdf', [AbsenGuruController::class, 'exportPDF'])->name('exportPDF');
     });
     
-    // Mata Pelajaran
+    // ✅ FIX 2: Mata Pelajaran Routes (Lengkap)
     Route::prefix('mata-pelajaran')->name('mata-pelajaran.')->group(function () {
         Route::get('/', [MataPelajaranController::class, 'index'])->name('index');
         Route::get('create', [MataPelajaranController::class, 'create'])->name('create');
         Route::post('/', [MataPelajaranController::class, 'store'])->name('store');
+        Route::get('{id}/edit', [MataPelajaranController::class, 'edit'])->name('edit');
+        Route::put('{id}', [MataPelajaranController::class, 'update'])->name('update');
         Route::delete('{id}', [MataPelajaranController::class, 'destroy'])->name('destroy');
     });
     
-    // Info Sekolah
+    // Alias untuk backward compatibility
+    Route::delete('jadwal-mapel/{id}', [MataPelajaranController::class, 'destroy'])->name('jadwal-mapel.destroy');
+    
+    // Info Sekolah (Admin)
     Route::prefix('infosekolah')->name('infosekolah.')->group(function () {
         Route::get('/', [InfoSekolahController::class, 'index'])->name('index');
         Route::get('create', [InfoSekolahController::class, 'create'])->name('create');
@@ -100,7 +99,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     })->name('pengaturan');
 });
 
-// Guru Routes
+// Guru Authentication Routes
 Route::prefix('guru')->name('guru.')->group(function () {
     Route::middleware('guest:guru')->group(function () {
         Route::get('login', [GuruLoginController::class, 'showLoginForm'])->name('login');
@@ -112,10 +111,28 @@ Route::prefix('guru')->name('guru.')->group(function () {
         ->name('logout');
 });
 
+// ✅ FIX 5: Guru Protected Routes
 Route::prefix('guru')->name('guru.')->middleware('auth:guru')->group(function () {
     Route::get('dashboard', function() {
         return view('guru.dashboard_guru');
     })->name('dashboard');
+    
+    // Absensi Mandiri Guru
+    Route::get('absen', function() {
+        $mataPelajaran = \App\Models\MataPelajaran::all();
+        return view('guru.absen', compact('mataPelajaran'));
+    })->name('absen');
+    
+    Route::post('absen', [AbsenGuruController::class, 'store'])->name('absen.store');
+    
+    // Riwayat Absensi Guru
+    Route::get('riwayat', function() {
+        $riwayat = \App\Models\AbsenGuru::where('guru_id', auth('guru')->id())
+            ->with('mataPelajaran')
+            ->orderBy('tanggal', 'desc')
+            ->paginate(10);
+        return view('guru.riwayat', compact('riwayat'));
+    })->name('riwayat');
 });
 
 Route::fallback(function () {

@@ -1,37 +1,61 @@
-@extends('layouts.admin')
-@section('content')
-<div class="bg-white p-6 rounded-xl shadow">
-<h2 class="text-xl font-bold mb-4">Tambah Jadwal Mata Pelajaran</h2>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Mata Pelajaran</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen p-8">
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-xl shadow-lg">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-800">Tambah Mata Pelajaran</h2>
+                    <p class="text-sm text-gray-600 mt-1">Tambahkan mata pelajaran baru ke sistem</p>
+                </div>
 
+                <div class="p-6">
+                    @if($errors->any())
+                        <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <ul class="list-disc list-inside">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
 
-<form action="{{ route('jadwal-mapel.store') }}" method="POST">
-@csrf
+                    <form action="{{ route('admin.mata-pelajaran.store') }}" method="POST">
+                        @csrf
 
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2">
+                                Nama Mata Pelajaran <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                name="nama_mata_pelajaran" 
+                                value="{{ old('nama_mata_pelajaran') }}"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" 
+                                placeholder="Contoh: Matematika, Bahasa Indonesia, IPA"
+                                required>
+                        </div>
 
-<label class="block mb-2 font-semibold">Mata Pelajaran</label>
-<input type="text" name="mapel" class="w-full p-2 border rounded mb-3" required>
-
-
-<label class="block mb-2 font-semibold">Guru</label>
-<input type="text" name="guru" class="w-full p-2 border rounded mb-3" required>
-
-
-<label class="block mb-2 font-semibold">Hari</label>
-<select name="hari" class="w-full p-2 border rounded mb-3" required>
-<option>Senin</option>
-<option>Selasa</option>
-<option>Rabu</option>
-<option>Kamis</option>
-<option>Jumat</option>
-</select>
-
-
-<label class="block mb-2 font-semibold">Jam</label>
-<input type="text" name="jam" placeholder="07:00 - 09:00" class="w-full p-2 border rounded mb-4" required>
-
-
-<button class="px-4 py-2 bg-green-600 text-white rounded-lg">Simpan</button>
-<a href="{{ route('jadwal-mapel.index') }}" class="ml-2 text-gray-600">Kembali</a>
-</form>
-</div>
-@endsection
+                        <div class="flex gap-3 mt-6">
+                            <a href="{{ route('admin.mata-pelajaran.index') }}" 
+                               class="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition">
+                                Kembali
+                            </a>
+                            <button type="submit" 
+                                    class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                                Simpan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

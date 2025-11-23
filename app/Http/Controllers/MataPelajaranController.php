@@ -9,30 +9,59 @@ class MataPelajaranController extends Controller
 {
     public function index()
     {
-        // Ambil semua mata pelajaran dengan guru yang mengajar
         $jadwal = MataPelajaran::with('guru')->get();
         return view('admin.matapelajaran.index', compact('jadwal'));
     }
 
     public function create()
     {
-        // Untuk menambah mata pelajaran baru, redirect ke halaman mata pelajaran
-        return redirect()->route('admin.matapelajaran.create');
+        return view('admin.matapelajaran.create');
     }
 
     public function store(Request $request)
     {
-        // Store dilakukan di MataPelajaranController
-        return redirect()->route('admin.matapelajaran.store');
+        $request->validate([
+            'nama_mata_pelajaran' => 'required|string|max:255|unique:mata_pelajaran,nama_mata_pelajaran'
+        ], [
+            'nama_mata_pelajaran.required' => 'Nama mata pelajaran harus diisi',
+            'nama_mata_pelajaran.unique' => 'Mata pelajaran sudah ada'
+        ]);
+
+        MataPelajaran::create([
+            'nama_mata_pelajaran' => $request->nama_mata_pelajaran
+        ]);
+
+        return redirect()->route('admin.mata-pelajaran.index')
+            ->with('success', 'Mata pelajaran berhasil ditambahkan!');
+    }
+
+    public function edit($id)
+    {
+        $mapel = MataPelajaran::findOrFail($id);
+        return view('admin.matapelajaran.edit', compact('mapel'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nama_mata_pelajaran' => 'required|string|max:255|unique:mata_pelajaran,nama_mata_pelajaran,' . $id
+        ]);
+
+        $mapel = MataPelajaran::findOrFail($id);
+        $mapel->update([
+            'nama_mata_pelajaran' => $request->nama_mata_pelajaran
+        ]);
+
+        return redirect()->route('admin.mata-pelajaran.index')
+            ->with('success', 'Mata pelajaran berhasil diperbarui!');
     }
 
     public function destroy($id)
     {
-        // Hapus mata pelajaran
         $mapel = MataPelajaran::findOrFail($id);
         $mapel->delete();
 
-        return redirect()->route('admin.jadwal-mapel.index')
+        return redirect()->route('admin.mata-pelajaran.index')
             ->with('success', 'Mata pelajaran berhasil dihapus!');
     }
 }
