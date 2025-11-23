@@ -31,51 +31,66 @@ class AbsenGuruController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        // ✅ PERBAIKAN: Lebih detail validation dengan custom messages
+        $validated = $request->validate([
             'guru_id' => 'required|exists:guru,id',
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
             'tanggal' => 'required|date',
             'waktu' => 'required',
             'status' => 'required|string|in:Hadir,Izin,Sakit,Alpa',
             'image_data' => 'nullable|string',
-            'face_descriptor' => 'nullable|string', // Data wajah dari face-api.js
+            'face_descriptor' => 'nullable|string',
+        ], [
+            'guru_id.required' => 'Silakan pilih guru terlebih dahulu atau ambil foto wajah.',
+            'guru_id.exists' => 'Guru yang dipilih tidak valid.',
+            'mata_pelajaran_id.required' => 'Silakan pilih mata pelajaran.',
+            'mata_pelajaran_id.exists' => 'Mata pelajaran yang dipilih tidak valid.',
+            'tanggal.required' => 'Tanggal harus diisi.',
+            'tanggal.date' => 'Format tanggal tidak valid.',
+            'waktu.required' => 'Waktu harus diisi.',
+            'status.required' => 'Status kehadiran harus dipilih.',
+            'status.in' => 'Status kehadiran tidak valid.',
         ]);
 
-        $data = $request->only('guru_id', 'mata_pelajaran_id', 'tanggal', 'waktu', 'status');
+        try {
+            $data = $request->only('guru_id', 'mata_pelajaran_id', 'tanggal', 'waktu', 'status');
 
-        // Simpan foto bukti
-        if ($request->has('image_data') && !empty($request->input('image_data'))) {
-            $base64_image = $request->input('image_data');
-            
-            if (preg_match('/^data:image\/(\w+);base64,/', $base64_image, $type)) {
-                $base64_image = substr($base64_image, strpos($base64_image, ',') + 1);
-                $base64_image = base64_decode($base64_image);
+            // Simpan foto bukti
+            if ($request->has('image_data') && !empty($request->input('image_data'))) {
+                $base64_image = $request->input('image_data');
+                
+                if (preg_match('/^data:image\/(\w+);base64,/', $base64_image, $type)) {
+                    $base64_image = substr($base64_image, strpos($base64_image, ',') + 1);
+                    $base64_image = base64_decode($base64_image);
 
-                if ($base64_image === false) {
-                    return back()->with('error', 'Gagal memproses gambar.');
+                    if ($base64_image !== false) {
+                        $filename = 'absen_' . $request->guru_id . '_' . time() . '.jpg';
+                        Storage::disk('public')->put('bukti_absen/' . $filename, $base64_image);
+                        $data['bukti_kehadiran'] = 'bukti_absen/' . $filename;
+                    }
                 }
-
-                $filename = 'absen_' . $request->guru_id . '_' . time() . '.jpg';
-                Storage::disk('public')->put('bukti_absen/' . $filename, $base64_image);
-                $data['bukti_kehadiran'] = 'bukti_absen/' . $filename;
             }
-        }
 
-        // Simpan face descriptor ke database guru (opsional, untuk pembelajaran)
-        if ($request->has('face_descriptor') && !empty($request->input('face_descriptor'))) {
-            $guru = Guru::find($request->guru_id);
-            
-            // Jika guru belum punya face descriptor, simpan
-            if (empty($guru->face_descriptor)) {
-                $guru->face_descriptor = $request->input('face_descriptor');
-                $guru->save();
+            // Simpan face descriptor ke database guru (opsional)
+            if ($request->has('face_descriptor') && !empty($request->input('face_descriptor'))) {
+                $guru = Guru::find($request->guru_id);
+                
+                if ($guru && empty($guru->face_descriptor)) {
+                    $guru->face_descriptor = $request->input('face_descriptor');
+                    $guru->save();
+                }
             }
+
+            AbsenGuru::create($data);
+
+            return redirect()->route('admin.absenguru.index')
+                ->with('success', '✅ Absen berhasil disimpan dengan verifikasi wajah!');
+
+        } catch (\Exception $e) {
+            return back()
+                ->with('error', '❌ Error: ' . $e->getMessage())
+                ->withInput();
         }
-
-        AbsenGuru::create($data);
-
-        return redirect()->route('admin.absenguru.index')
-            ->with('success', '✅ Absen berhasil disimpan dengan verifikasi wajah!');
     }
 
     public function edit($id)
@@ -108,7 +123,6 @@ class AbsenGuruController extends Controller
     {
         $absen = AbsenGuru::findOrFail($id);
         
-        // Hapus foto bukti jika ada
         if ($absen->bukti_kehadiran) {
             Storage::disk('public')->delete($absen->bukti_kehadiran);
         }
@@ -125,7 +139,6 @@ class AbsenGuruController extends Controller
         return response()->json($guru);
     }
 
-    // API untuk mendapatkan semua face descriptors guru terdaftar
     public function getRegisteredFaces()
     {
         $guru = Guru::whereNotNull('face_descriptor')
@@ -134,109 +147,99 @@ class AbsenGuruController extends Controller
         return response()->json($guru);
     }
 
-    public function exportExcel()
-    {
-        return Excel::download(new AbsenGuruExport, 'absen_guru.xlsx');
-    }
-
-    public function exportPDF()
-    {
-        $kehadiran = AbsenGuru::with(['guru','mataPelajaran'])->get();
-        $pdf = PDF::loadView('admin.absenguru.pdf', compact('kehadiran'));
-        return $pdf->download('absen_guru.pdf');
-    }
-
+    /**
+     * 🆕 MATCH FACE DAN LANGSUNG ABSEN
+     */
     public function matchFaceAndAbsen(Request $request)
-{
-    $request->validate([
-        'face_descriptor' => 'required|string',
-        'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
-        'tanggal' => 'required|date',
-        'waktu' => 'required',
-        'status' => 'required|string|in:Hadir,Izin,Sakit,Alpa',
-        'image_data' => 'nullable|string',
-    ]);
+    {
+        $request->validate([
+            'face_descriptor' => 'required|string',
+            'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
+            'tanggal' => 'required|date',
+            'waktu' => 'required',
+            'status' => 'required|string|in:Hadir,Izin,Sakit,Alpa',
+            'image_data' => 'nullable|string',
+        ]);
 
-    try {
-        $inputDescriptor = json_decode($request->input('face_descriptor'), true);
-        
-        if (!is_array($inputDescriptor) || count($inputDescriptor) !== 128) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Invalid face descriptor format'
-            ], 400);
-        }
-
-        // CARI GURU YANG MATCH
-        $guruList = Guru::whereNotNull('face_descriptor')->get();
-        
-        $bestMatch = null;
-        $bestDistance = 0.6;
-
-        foreach ($guruList as $guru) {
-            $storedDescriptor = json_decode($guru->face_descriptor, true);
+        try {
+            $inputDescriptor = json_decode($request->input('face_descriptor'), true);
             
-            if (!is_array($storedDescriptor) || count($storedDescriptor) !== 128) {
-                continue;
+            if (!is_array($inputDescriptor) || count($inputDescriptor) !== 128) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid face descriptor format'
+                ], 400);
             }
 
-            $distance = $this->euclideanDistance($inputDescriptor, $storedDescriptor);
+            $guruList = Guru::whereNotNull('face_descriptor')->get();
             
-            if ($distance < $bestDistance) {
-                $bestDistance = $distance;
-                $bestMatch = $guru;
-            }
-        }
+            $bestMatch = null;
+            $bestDistance = 0.6;
 
-        if (!$bestMatch) {
-            return response()->json([
-                'success' => false,
-                'matched' => false,
-                'message' => 'Wajah tidak dikenali'
-            ]);
-        }
+            foreach ($guruList as $guru) {
+                $storedDescriptor = json_decode($guru->face_descriptor, true);
+                
+                if (!is_array($storedDescriptor) || count($storedDescriptor) !== 128) {
+                    continue;
+                }
 
-        // LANGSUNG SIMPAN ABSENSI
-        $imageData = $request->input('image_data');
-        $filename = null;
-
-        if ($imageData && !empty($imageData)) {
-            if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $type)) {
-                $imageData = substr($imageData, strpos($imageData, ',') + 1);
-                $imageData = base64_decode($imageData);
-
-                if ($imageData !== false) {
-                    $filename = 'absen_' . $bestMatch->id . '_' . time() . '.jpg';
-                    Storage::disk('public')->put('bukti_absen/' . $filename, $imageData);
+                $distance = $this->euclideanDistance($inputDescriptor, $storedDescriptor);
+                
+                if ($distance < $bestDistance) {
+                    $bestDistance = $distance;
+                    $bestMatch = $guru;
                 }
             }
-        }
 
-        $absen = AbsenGuru::create([
-            'guru_id' => $bestMatch->id,
-            'mata_pelajaran_id' => $request->mata_pelajaran_id,
-            'tanggal' => $request->tanggal,
-            'waktu' => $request->waktu,
-            'status' => $request->status,
-            'bukti_kehadiran' => $filename ? 'bukti_absen/' . $filename : null
-        ]);
+            if (!$bestMatch) {
+                return response()->json([
+                    'success' => false,
+                    'matched' => false,
+                    'message' => 'Wajah tidak dikenali'
+                ]);
+            }
 
-        return response()->json([
-            'success' => true,
-            'matched' => true,
-            'guru' => [
-                'id' => $bestMatch->id,
-                'nama_guru' => $bestMatch->nama_guru,
-                'email' => $bestMatch->email,
-                'confidence' => round((1 - $bestDistance) * 100, 2)
-            ],
-            'absensi' => [
-                'id' => $absen->id,
-                'tanggal' => $absen->tanggal,
-                'status' => $absen->status
-            ],
-            'message' => '✅ Absensi berhasil dicatat untuk ' . $bestMatch->nama_guru
-        ]);
+            // LANGSUNG SIMPAN ABSENSI
+            $imageData = $request->input('image_data');
+            $filename = null;
+
+            if ($imageData && !empty($imageData)) {
+                if (preg_match('/^data:image\/(\w+);base64,/', $imageData, $type)) {
+                    $imageData = substr($imageData, strpos($imageData, ',') + 1);
+                    $imageData = base64_decode($imageData);
+
+                    if ($imageData !== false) {
+                        $filename = 'absen_' . $bestMatch->id . '_' . time() . '.jpg';
+                        Storage::disk('public')->put('bukti_absen/' . $filename, $imageData);
+                    }
+                }
+            }
+
+            $absen = AbsenGuru::create([
+                'guru_id' => $bestMatch->id,
+                'mata_pelajaran_id' => $request->mata_pelajaran_id,
+                'tanggal' => $request->tanggal,
+                'waktu' => $request->waktu,
+                'status' => $request->status,
+                'bukti_kehadiran' => $filename ? 'bukti_absen/' . $filename : null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'matched' => true,
+                'guru' => [
+                    'id' => $bestMatch->id,
+                    'nama_guru' => $bestMatch->nama_guru,
+                    'email' => $bestMatch->email,
+                    'confidence' => round((1 - $bestDistance) * 100, 2)
+                ],
+                'absensi' => [
+                    'id' => $absen->id,
+                    'tanggal' => $absen->tanggal,
+                    'status' => $absen->status
+                ],
+                'message' => '✅ Absensi berhasil dicatat untuk ' . $bestMatch->nama_guru
+            ]);
 
         } catch (\Exception $e) {
             return response()->json([
@@ -262,5 +265,17 @@ class AbsenGuruController extends Controller
         }
 
         return sqrt($sum);
+    }
+
+    public function exportExcel()
+    {
+        return Excel::download(new AbsenGuruExport, 'absen_guru.xlsx');
+    }
+
+    public function exportPDF()
+    {
+        $kehadiran = AbsenGuru::with(['guru','mataPelajaran'])->get();
+        $pdf = PDF::loadView('admin.absenguru.pdf', compact('kehadiran'));
+        return $pdf->download('absen_guru.pdf');
     }
 }

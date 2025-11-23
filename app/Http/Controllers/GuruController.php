@@ -43,6 +43,7 @@ class GuruController extends Controller
 
         Guru::create($data);
 
+        // ✅ PERBAIKAN: Gunakan route name yang benar
         return redirect()->route('admin.dataguru.index')->with('success', 'Guru berhasil ditambahkan');
     }
 
@@ -80,6 +81,7 @@ class GuruController extends Controller
 
         $guru->update($data);
 
+        // ✅ PERBAIKAN: Gunakan route name yang benar
         return redirect()->route('admin.dataguru.index')->with('success', 'Data guru diperbarui');
     }
 
@@ -92,21 +94,19 @@ class GuruController extends Controller
         $guru->delete();
         return redirect()->route('admin.dataguru.index')->with('success', 'Guru dihapus');
     }
-    
+
     /**
      * 🆕 EXTRACT FACE DESCRIPTOR DARI FOTO PROFIL
-     * Endpoint ini dipanggil saat upload foto profil guru
      */
     public function extractFaceDescriptor(Request $request, $id)
     {
         $guru = Guru::findOrFail($id);
         
         $request->validate([
-            'face_data' => 'required|string' // Base64 dari canvas
+            'face_data' => 'required|string'
         ]);
 
         try {
-            // Simpan face descriptor JSON dari frontend
             $faceData = $request->input('face_data');
             $guru->face_descriptor = $faceData;
             $guru->save();
@@ -125,7 +125,6 @@ class GuruController extends Controller
 
     /**
      * 🆕 API: GET GURU BERDASARKAN FACE SIMILARITY
-     * Admin absen tinggal scan wajah, sistem otomatis pilih nama guru
      */
     public function findByFaceDescriptor(Request $request)
     {
@@ -143,7 +142,6 @@ class GuruController extends Controller
                 ], 400);
             }
 
-            // Ambil semua guru dengan face descriptor
             $guruList = Guru::whereNotNull('face_descriptor')->get();
 
             if ($guruList->isEmpty()) {
@@ -154,7 +152,7 @@ class GuruController extends Controller
             }
 
             $bestMatch = null;
-            $bestDistance = 0.6; // Threshold (semakin kecil = semakin strict)
+            $bestDistance = 0.6;
             $matchDetails = [];
 
             foreach ($guruList as $guru) {
@@ -164,7 +162,6 @@ class GuruController extends Controller
                     continue;
                 }
 
-                // Hitung Euclidean Distance
                 $distance = $this->euclideanDistance($inputDescriptor, $storedDescriptor);
                 
                 $matchDetails[] = [
@@ -192,7 +189,6 @@ class GuruController extends Controller
                         'confidence' => round((1 - $bestDistance) * 100, 2)
                     ],
                     'distance' => $bestDistance,
-                    'debug' => $matchDetails // Untuk debugging
                 ]);
             } else {
                 return response()->json([
@@ -215,27 +211,7 @@ class GuruController extends Controller
     }
 
     /**
-     * 🆕 HELPER: HITUNG EUCLIDEAN DISTANCE
-     * Mengukur similarity antara 2 face descriptor (0-1, semakin kecil = semakin mirip)
-     */
-    private function euclideanDistance(array $desc1, array $desc2): float
-    {
-        if (count($desc1) !== count($desc2)) {
-            throw new \Exception('Descriptor dimensions tidak cocok');
-        }
-
-        $sum = 0;
-        for ($i = 0; $i < count($desc1); $i++) {
-            $diff = floatval($desc1[$i]) - floatval($desc2[$i]);
-            $sum += $diff * $diff;
-        }
-
-        return sqrt($sum);
-    }
-
-    /**
      * 🆕 API: BATCH GET ALL GURU DENGAN FACE DESCRIPTORS
-     * Untuk preload di cache frontend
      */
     public function getAllFaceDescriptors()
     {
@@ -255,5 +231,23 @@ class GuruController extends Controller
             'count' => $guru->count(),
             'data' => $guru
         ]);
+    }
+
+    /**
+     * 🆕 HELPER: HITUNG EUCLIDEAN DISTANCE
+     */
+    private function euclideanDistance(array $desc1, array $desc2): float
+    {
+        if (count($desc1) !== count($desc2)) {
+            throw new \Exception('Descriptor dimensions tidak cocok');
+        }
+
+        $sum = 0;
+        for ($i = 0; $i < count($desc1); $i++) {
+            $diff = floatval($desc1[$i]) - floatval($desc2[$i]);
+            $sum += $diff * $diff;
+        }
+
+        return sqrt($sum);
     }
 }

@@ -184,7 +184,7 @@
                 <label for="mata_pelajaran_id" class="form-label fw-semibold">
                   Mata Pelajaran <span class="text-danger">*</span>
                 </label>
-                <select name="mata_pelajaran_id" id="mata_pelajaran_id" class="form-select" required>
+                <select name="mata_pelajaran_id" id="mata_pelajaran_id" class="form-select">
                   <option value="" disabled selected>-- Pilih Mata Pelajaran --</option>
                   @foreach ($mataPelajaran as $mapel)
                     <option value="{{ $mapel->id }}">
@@ -201,7 +201,7 @@
                   <span class="badge bg-warning text-dark">AUTO-FILL</span>
                 </label>
                 <div class="input-group">
-                  <select name="guru_id" id="guru_id" class="form-select" required>
+                  <select name="guru_id" id="guru_id" class="form-select">
                     <option value="" disabled selected>-- Akan otomatis terisi dari face match --</option>
                   </select>
                   <button type="button" class="btn btn-outline-secondary" id="btnManualSelect" title="Pilih manual">
