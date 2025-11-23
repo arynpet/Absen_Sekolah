@@ -290,11 +290,29 @@
       try {
         console.log('Memuat model Face-API...');
         
-        await Promise.all([
-          faceapi.nets.ssdMobilenetv1.loadFromUri('/models'),
-          faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-          faceapi.nets.faceRecognitionNet.loadFromUri('/models')
-        ]);
+        // Coba load dari public/models terlebih dahulu
+        try {
+          await Promise.all([
+            faceapi.nets.ssdMobilenetv1.loadFromUri('/public/models'),
+            faceapi.nets.faceLandmark68Net.loadFromUri('/public/models'),
+            faceapi.nets.faceRecognitionNet.loadFromUri('/public/models')
+          ]);
+        } catch (localError) {
+          // Jika gagal, gunakan CDN sebagai fallback
+          console.warn('⚠️ Model lokal tidak ditemukan, menggunakan CDN...');
+          try{
+          const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+          
+          await Promise.all([
+            faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+            ]);
+          }
+          catch (localError) {
+          console.warn('⚠️ Model CDN tidak ditemukan');
+        }
+      }
 
         console.log('✅ Model berhasil dimuat!');
         modelsLoaded = true;
@@ -302,7 +320,7 @@
         
       } catch (error) {
         console.error('❌ Gagal memuat model:', error);
-        updateStatus('❌ Error: Model tidak ditemukan. Pastikan folder /public/models/ ada!', 'error');
+        updateStatus('❌ Error: Gagal memuat model AI. Periksa koneksi internet!', 'error');
       }
     }
 
