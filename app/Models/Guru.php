@@ -19,7 +19,8 @@ class Guru extends Authenticatable
         'password',
         'foto_profil',
         'mata_pelajaran_id',
-        'face_descriptor' 
+        'face_descriptor',
+        'bukti_kehadiran'
     ];
 
     protected $hidden = ['password'];

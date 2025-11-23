@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\AbsenGuruExport;
 use PDF;
+use Illuminate\Support\Facades\Storage;
 
 class AbsenGuruController extends Controller
 {
@@ -30,18 +31,57 @@ class AbsenGuruController extends Controller
 
     public function store(Request $request)
     {
+        // Validasi
         $request->validate([
             'guru_id' => 'required|exists:guru,id',
             'mata_pelajaran_id' => 'required|exists:mata_pelajaran,id',
             'tanggal' => 'required|date',
-            'jam_datang' => 'nullable|date_format:H:i',
-            'jam_pulang' => 'nullable|date_format:H:i',
-            'status' => 'required|string|in:Hadir,Izin,Sakit,Alpa',
+            'waktu'   => 'required',
+            'status'  => 'required|string|in:Hadir,Izin,Sakit,Alpa',
+            'image_data' => 'nullable|string', // Validasi data gambar
         ]);
 
-        AbsenGuru::create($request->only('guru_id','mata_pelajaran_id','tanggal','jam_datang','jam_pulang','status'));
+        // Ambil data dasar
+        $data = $request->only('guru_id', 'mata_pelajaran_id', 'tanggal', 'waktu', 'status');
 
-        return redirect()->route('admin.absenguru.index')->with('success', '✅ Data absensi guru berhasil ditambahkan!');
+        // --- PROSES SIMPAN FOTO BASE64 ---
+        if ($request->has('image_data') && !empty($request->input('image_data'))) {
+            
+            // 1. Ambil string base64 dari input hidden
+            $base64_image = $request->input('image_data');
+            
+            // 2. Cek apakah formatnya valid (ada header data:image/...)
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64_image, $type)) {
+                
+                // 3. Buang header, ambil isinya saja
+                $base64_image = substr($base64_image, strpos($base64_image, ',') + 1);
+                
+                // 4. Decode dari base64 ke binary gambar
+                $base64_image = base64_decode($base64_image);
+
+                if ($base64_image === false) {
+                    // Jika gagal decode
+                    return back()->with('error', 'Gagal memproses gambar.');
+                }
+
+                // 5. Buat nama file unik
+                // Format: absen_GURU-ID_TIMESTAMP.jpg
+                $filename = 'absen_' . $request->guru_id . '_' . time() . '.jpg';
+                
+                // 6. Simpan ke folder 'public/bukti_absen'
+                // Pastikan sudah menjalankan: php artisan storage:link
+                Storage::disk('public')->put('bukti_absen/' . $filename, $base64_image);
+
+                // 7. Masukkan path ke array data database
+                $data['bukti_kehadiran'] = 'bukti_absen/' . $filename;
+            }
+        }
+        // -----------------------------------
+
+        // Simpan ke Database
+        \App\Models\AbsenGuru::create($data);
+
+        return redirect()->route('admin.absenguru.index')->with('success', '✅ Absen berhasil disimpan dengan Foto!');
     }
 
     public function edit($id)
